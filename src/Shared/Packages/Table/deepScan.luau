@@ -5,21 +5,22 @@
 	@written: 12/15/2024
 ]]
 
+local Shared = game.ReplicatedStorage.Shared
+
 -- Types
+local Table = require(Shared.Types.Table)
+local Function = require(Shared.Types.Function)
+
 export type EntrySettings = {
 	key: any,
 	value: any,
+	count: number,
 	treatAsValue: boolean,
 	terminate: boolean,
 	ignore: boolean,
 	depth: number,
-	currentTable: {},
+	currentTable: Table.Any,
 }
-
-local Shared = game.ReplicatedStorage.Shared
-
-local Table = require(Shared.Types.Table)
-local Function = require(Shared.Types.Function)
 
 -- Packages
 local isFunction: Function.BooleanResult = require(Shared.Packages.Util.Types.isFunction)
@@ -33,53 +34,68 @@ local isTable: Function.BooleanResult = require(Shared.Packages.Util.Types.isTab
 	is passed a table of options that have been defined internally. You can
 	modify these options to determine what should happen during the iteration.
 
-	? Example, this will ignore any value of "a" in the tree:
+	For example, this will ignore any value of "a" in the tree:
 
-		deepCopy(t, function(got)
+	```lua
+		deepScan(t, function(got)
 			if (got.value == "a") then
 				got.ignore = true
 			end
 		end)
+	```
 
 	If you have not re-assigned the key or value, they will remain as they were.
 
-	# Possible options:
-		? got.terminate
-			- if true, process the other options and break the loop
-		? got.ignore
-			- if true, don't include the current entry in the returned tree
-		? got.treatAsValue
-			- if true, value is implied to be a table, and the table reference will be added to the tree but not iterated over.
-		? got.value
-			- the value at the current iteration
-		? got.key
-			- the key at the current iteration
+	### Possible options:
+	
+	* got.terminate:
+	If true, process the other options and break the loop
 
-	# These are included as options but are intended as read-only:
-		? got.depth
-			- the depth of the cycle
-		? got.currentTable
-			- the current table in the cycle
+	* got.ignore:
+	If true, don't include the current entry in the returned tree
 
-	Example of stopping table coping once past a certain depth:
+	* got.treatAsValue:
+	If true, value is implied to be a table, and the table reference will be added to the tree but not iterated over.
 
-		deepCopy(t, function(got)
+	* got.value:
+	The value at the current iteration
+
+	* got.key:
+	The key at the current iteration
+
+	### These are included as options but are intended as read-only:
+	* got.depth:
+	The depth of the cycle
+
+	* got.currentTable:
+	The current table in the cycle
+
+	* got.count:
+	The iteration cycle as a numeric counter value in the current table
+
+	### Example of stopping table coping once past a certain depth:
+
+	```lua
+		deepScan(t, function(got)
 			if (got.depth == 3) then
 				got.terminate = true
 				return 
 			end
 		end)
+	```
 
-	Example of changing keys/values in table copy:
+	### Example of changing keys/values in table copy:
 
-		deepCopy(t, function(got)
+	```lua
+		deepScan(t, function(got)
 			got.key = tostring(got.key) .. " - modified"
 			got.value = tostring(got.value) .. " - modified"
 		end)
+	```
 ]]
-local function deepCopy(t: Table.Any, callback: (got: EntrySettings) -> ()): Table.Any
+local function deepScan(t: Table.Any, callback: (got: EntrySettings) -> ()): Table.Any
 	if callback and not isFunction(callback) then
-		error("Callback passed to deepCopy() must be nil or a function")
+		error("Callback passed to deepScan() must be nil or a function")
 	end
 
 	local tree: Table.Any = {}
@@ -88,6 +104,7 @@ local function deepCopy(t: Table.Any, callback: (got: EntrySettings) -> ()): Tab
 	while #queue > 0 do
 		local set: Table.AnyArray = queue[#queue]
 		local dir: Table.Any, treeDir: Table.Any, depth: number = set[1], set[2], set[3]
+		local count = 0
 
 		queue[#queue] = nil
 
@@ -95,6 +112,7 @@ local function deepCopy(t: Table.Any, callback: (got: EntrySettings) -> ()): Tab
 			local got: EntrySettings = {
 				key = key,
 				value = value,
+				count = count,
 				treatAsValue = false,
 				terminate = false,
 				ignore = false,
@@ -121,10 +139,12 @@ local function deepCopy(t: Table.Any, callback: (got: EntrySettings) -> ()): Tab
 			if got.terminate then
 				break
 			end
+
+			count += 1
 		end
 	end
 
 	return tree
 end
 
-return deepCopy
+return deepScan
