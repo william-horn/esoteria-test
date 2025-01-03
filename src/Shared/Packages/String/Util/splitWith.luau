@@ -7,41 +7,42 @@ export type SplitOptions = {
 	usePatterns: boolean,
 }
 
-return function(import)
-	local StringEscaper = import("@String/@Classes/StringEscaper")
-	local trimAround: (string) -> string = require(script.Parent.trimAround)()
+local Shared = game.ReplicatedStorage.Shared
 
-	--[[
-		String:splitWith(str<string>, delim<string>, options<table>):
+local Table = require(Shared.Types.Table)
+local StringEscaper = require(Shared.Packages.String.Classes.StringEscaper)
+local trimAround = require(script.Parent.trimAround)
 
-		@desc:
-			Splits a string by a delimiter and returns a table of the split values
-		@params:
-			str<string>: The string to split
-			delim<string>: The delimiter to split by
-			options<table>: (optional) A table of options
-		@returns: <table> splitStr
-	]]
-	local function splitWith(str: string, delim: string, _options: SplitOptions?): { string }
-		local options: SplitOptions = _options or {} :: SplitOptions
-		-- options.usePatterns<boolean>: default - nil
+--[[
+	String:splitWith(str<string>, delim<string>, options<table>):
 
-		if not options.usePatterns then
-			delim = StringEscaper.escapeMagicChars(delim)
-		end
+	@desc:
+		Splits a string by a delimiter and returns a table of the split values
+	@params:
+		str<string>: The string to split
+		delim<string>: The delimiter to split by
+		options<table>: (optional) A table of options
+	@returns: <table> splitStr
+]]
+local function splitWith(str: string, delim: string, _options: SplitOptions?): Table.StringArray
+	local options: SplitOptions = _options or {} :: SplitOptions
+	-- options.usePatterns<boolean>: default - nil
 
-		if delim ~= lastSplitDelim then
-			splitPattern = "[^" .. delim .. "]+"
-		end
-
-		local t: { string } = {}
-
-		for element: string in str:gmatch(splitPattern) do
-			t[#t + 1] = trimAround(element)
-		end
-
-		return t
+	if not options.usePatterns then
+		delim = StringEscaper.escapeMagicChars(delim)
 	end
 
-	return splitWith
+	if delim ~= lastSplitDelim then
+		splitPattern = "[^" .. delim .. "]+"
+	end
+
+	local t: Table.StringArray = {}
+
+	for element: string in str:gmatch(splitPattern) do
+		t[#t + 1] = trimAround(element)
+	end
+
+	return t
 end
+
+return splitWith

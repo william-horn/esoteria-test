@@ -1,3 +1,5 @@
+--!strict
+
 --[[
 	@author: William J. Horn
 	@written: 12/9/2024
@@ -52,175 +54,212 @@
 				unescape --> "hello $world test"
 ]]
 
-return function(import)
-	local isNumber = import("@/Util/@Types/isNumber")
-	local getVacantIndex = import("@/Table/@Dictionary/getVacantIndex")
+local Shared = game.ReplicatedStorage.Shared
 
-	-- local StringEscaper, _StringEscaper = withDotMethod()
-	local StringEscaper = {}
-	StringEscaper.__index = StringEscaper
+local Table = require(Shared.Types.Table)
 
-	--[[
-		StringEscaper.escapeMagicChars(text<string>):
-		
-		@desc:
-			Escapes the magic characters in the text.
-		@params:
-			text<string>: the text to escape
-		@returns:
-			<string>: the escaped text
-	]]
-	function StringEscaper:escapeMagicChars(text)
-		text = text:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%1")
-		return text
+local isNumber = require(Shared.Packages.Util.Types.isNumber)
+local isTable = require(Shared.Packages.Util.Types.isTable)
+local getVacantIndex = require(Shared.Packages.Table.Dictionary.getVacantIndex)
+
+-- local StringEscaper, _StringEscaper = withDotMethod()
+local StringEscaper = {}
+StringEscaper.__index = StringEscaper
+
+-- Types
+type EscapeData = {
+	encoded: string,
+	text: string,
+	noMagicText: string,
+	escapePattern: string,
+}
+
+type EscapeDataMap = {
+	[number]: EscapeData,
+}
+
+type StringIdMap = {
+	[string]: number,
+}
+
+type self = {
+	_stringToId: { [string]: number },
+	_escaped: EscapeDataMap,
+	prefix: string,
+}
+
+export type StringEscaper = typeof(setmetatable({} :: self, StringEscaper))
+
+--[[
+	StringEscaper:escape(text<string>):
+	
+	@desc:
+		Escapes the text using the escape characters defined
+		in the object's instantiation.
+	@params:
+		text<string>: the text to escape
+	@returns:
+		<string>: the escaped text
+]]
+function StringEscaper:escape(text: string): string
+	for _, stringData: EscapeData in next, self._escaped do
+		text = text:gsub(stringData.escapePattern, stringData.encoded)
 	end
 
-	--[[
-		StringEscaper:escape(text<string>):
-		
-		@desc:
-			Escapes the text using the escape characters defined
-			in the object's instantiation.
-		@params:
-			text<string>: the text to escape
-		@returns:
-			<string>: the escaped text
-	]]
-	function StringEscaper:escape(text)
-		print("text: ", text)
-		for id, stringData in next, self.escaped do
-			text = text:gsub(stringData.escapePattern, stringData.encoded)
-		end
-
-		return text
-	end
-
-	--[[
-		StringEscaper:unescape(text<string>):
-		
-		@desc:
-			Unescapes the text using the escape characters defined
-			in the object's instantiation.
-		@params:
-			text<string>: the text to unescape
-		@returns:
-			<string>: the unescaped text
-	]]
-	function StringEscaper:unescape(text)
-		for id, stringData in next, self.escaped do
-			text = text:gsub(stringData.encoded, stringData.text)
-		end
-
-		return text
-	end
-
-	--[[
-		StringEscaper:add(text<string>):
-		
-		@desc:
-			Add a new string to the StringEscaper object.
-		@params:
-			text<string>: the text to add
-		@returns:
-			<number>: the id of the added text
-	]]
-	function StringEscaper:add(text)
-		local stringData = self.escaped
-		local stringToId = self._stringToId
-
-		-- if added text already exists, then return out
-		if stringToId[text] then
-			return
-		end
-
-		local id = getVacantIndex(stringData)
-		local noMagicText = self:escapeMagicChars(text)
-
-		stringData[id] = {
-			encoded = "\1" .. id .. "\1",
-			text = text,
-			noMagicText = noMagicText,
-			escapePattern = self.prefix .. "(" .. noMagicText .. ")",
-		}
-
-		stringToId[text] = id
-		return id
-	end
-
-	--[[
-		StringEscaper:remove(text<string|number>):
-		
-		@desc:
-			Removes the string from the StringEscaper object.
-		@params:
-			text<string|number>: the text or id to remove
-		@returns:
-			<nil>
-	]]
-	function StringEscaper:remove(text)
-		local stringData = self.escaped
-		local stringToId = self._stringToId
-
-		local id = isNumber(text) and text or stringToId[text]
-
-		-- ! error:
-		-- If the id does not exist. This can happen if the user manually passes an
-		-- invalid id number as the text argument
-		if not id then
-			error('Invalid id passed to StringEscaper.remove(): Got "' .. tostring(id) .. '"')
-		end
-
-		stringData[id] = nil
-		stringToId[text] = nil
-	end
-
-	--[[
-		StringEscaper.new(prefix<string>, escapedString<table>):
-		
-		@desc:
-			Creates a new StringEscaper object.
-		@params:
-			prefix<string>: the prefix to use for escaping
-			escapedString<table>: the strings to escape
-		@returns:
-			<StringEscaper>: the StringEscaper object
-	]]
-	function StringEscaper:new(prefix, escaped)
-		escaped = table.clone(escaped or {})
-
-		local stringEscaper = setmetatable({}, StringEscaper)
-
-		--[[
-			dict that maps encoded/decoded string segments
-			
-			escaped: {
-				[id] = {
-					encoded<string> - the encoded escaped string,
-					text<string> - the original string to escape,
-					noMagicText<string> - original string but escaping magic characters,
-					escapePattern<string> - the pattern to use for finding the escaped string
-				},
-				...
-			}
-			
-			_stringToId: {
-				[text<string>] = id<number>
-			}
-		]]
-		stringEscaper._stringToId = {}
-		stringEscaper.escaped = {}
-		stringEscaper.prefix = prefix
-
-		for index = 1, #escaped do
-			stringEscaper:add(escaped[index])
-		end
-
-		-- include the escape prefix in with the strings to escape
-		stringEscaper:add(prefix)
-		return stringEscaper
-	end
-
-	return {
-		default = StringEscaper,
-	}
+	return text
 end
+
+--[[
+	StringEscaper:unescape(text<string>):
+	
+	@desc:
+		Unescapes the text using the escape characters defined
+		in the object's instantiation.
+	@params:
+		text<string>: the text to unescape
+	@returns:
+		<string>: the unescaped text
+]]
+function StringEscaper:unescape(text: string): string
+	for _, stringData: EscapeData in next, self._escaped do
+		text = text:gsub(stringData.encoded, stringData.text)
+	end
+
+	return text
+end
+
+--[[
+	StringEscaper:add(text<string>):
+	
+	@desc:
+		Add a new string to the StringEscaper object.
+	@params:
+		text<string>: the text to add
+	@returns:
+		<number>: the id of the added text
+]]
+function StringEscaper:add(text: string): number?
+	local stringData: EscapeDataMap = self._escaped
+	local stringToId: StringIdMap = self._stringToId
+
+	-- if added text already exists, then return out
+	if stringToId[text] then
+		return nil
+	end
+
+	local id: number = getVacantIndex(stringData)
+	local noMagicText: string = StringEscaper.escapeMagicChars(text)
+
+	stringData[id] = {
+		encoded = "\1" .. id .. "\1",
+		text = text,
+		noMagicText = noMagicText,
+		escapePattern = self.prefix .. "(" .. noMagicText .. ")",
+	}
+
+	stringToId[text] = id
+	return id
+end
+
+--[[
+	StringEscaper:remove(text<string|number>):
+	
+	@desc:
+		Removes the string from the StringEscaper object.
+	@params:
+		text<string|number>: the text or id to remove
+	@returns:
+		<nil>
+]]
+function StringEscaper:remove(text: string | number): ()
+	local stringData: EscapeDataMap = self._escaped
+	local stringToId: StringIdMap = self._stringToId
+
+	local id: number? = isNumber(text) and text :: number or stringToId[text :: string]
+
+	-- ! error:
+	-- If the id does not exist. This can happen if the user manually passes an
+	-- invalid id number as the text argument
+	if not id then
+		error('Invalid id passed to StringEscaper.remove(): Got "' .. tostring(id) .. '"')
+	end
+
+	stringData[id] = nil
+	stringToId[text :: string] = nil
+end
+
+--[[
+	StringEscaper.is(v<any>):
+
+	Returns true if a value is a StringEscaper instance
+]]
+function StringEscaper.is(v: any): boolean
+	return isTable(v) and getmetatable(v) == StringEscaper
+end
+
+--[[
+	StringEscaper.escapeMagicChars(text<string>):
+	
+	@desc:
+		Escapes the magic characters in the text.
+	@params:
+		text<string>: the text to escape
+	@returns:
+		<string>: the escaped text
+]]
+function StringEscaper.escapeMagicChars(text: string): string
+	text = text:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0")
+	return text
+end
+
+--[[
+	StringEscaper.new(prefix<string>, escapedString<table>):
+	
+	@desc:
+		Creates a new StringEscaper object.
+	@params:
+		prefix<string>: the prefix to use for escaping
+		escapedString<table>: the strings to escape
+	@returns:
+		<StringEscaper>: the StringEscaper object
+]]
+function StringEscaper.new(prefix: string, _escaped: Table.StringArray?): StringEscaper
+	local escaped: Table.StringArray = table.clone(_escaped or {}) :: Table.StringArray
+
+	local self = setmetatable({} :: self, StringEscaper)
+
+	--[[
+		dict that maps encoded/decoded string segments
+		
+		escaped: {
+			[id] = {
+				encoded<string> - the encoded escaped string,
+				text<string> - the original string to escape,
+				noMagicText<string> - original string but escaping magic characters,
+				escapePattern<string> - the pattern to use for finding the escaped string
+			},
+			...
+		}
+		
+		_stringToId: {
+			[text<string>] = id<number>
+		}
+	]]
+	self._stringToId = {}
+	self._escaped = {}
+	self.prefix = prefix
+
+	for index: number = 1, #escaped do
+		self:add(escaped[index])
+	end
+
+	-- include the escape prefix in with the strings to escape
+	self:add(prefix)
+	return self
+end
+
+return {
+	new = StringEscaper.new,
+	escapeMagicChars = StringEscaper.escapeMagicChars,
+	is = StringEscaper.is,
+}

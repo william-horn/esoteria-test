@@ -1,8 +1,6 @@
 --!strict
 
-local Function = require(script.Parent.Parent.Parent.Types.Function)
-
-local pow: Function.Number = math.pow
+local pow = math.pow
 
 local function roundToNth(n: number, nth: number): number
 	local factor: number = pow(10, nth)

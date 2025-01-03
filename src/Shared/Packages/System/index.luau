@@ -1,6 +1,6 @@
 --!strict
 
-local Enums = require(game.ReplicatedStorage.Shared.Enums.index)
+local Enums = game.ReplicatedStorage.Shared.Enums
 local MachineType = Enums.MachineType
 
 local isServer = require(script.Parent.isServer)
