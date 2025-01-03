@@ -1,15 +1,13 @@
 --!strict
 
-return function()
-	local function getVacantIndex(t: {})
-		for i: number = 1, #t do
-			if t[i] == nil then
-				return i
-			end
+local function getVacantIndex(t): number
+	for i: number = 1, #t do
+		if t[i] == nil then
+			return i
 		end
-
-		return #t + 1
 	end
 
-	return getVacantIndex
+	return #t + 1
 end
+
+return getVacantIndex
