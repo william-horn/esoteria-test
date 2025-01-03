@@ -14,7 +14,7 @@ local Table = require(Shared.Types.Table)
 export type QueryOptions = {
 	strictlyEquals: boolean?,
 	usePatterns: boolean?,
-	caseSensitive: boolean,
+	caseSensitive: boolean?,
 	shallowCheck: boolean?,
 }
 

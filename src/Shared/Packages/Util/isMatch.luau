@@ -34,7 +34,7 @@ local function isMatch(a: any, b: any, _options: MatchOptions?): boolean
 		return a == b
 	end
 
-	if options.caseSensitive then
+	if not options.caseSensitive then
 		a = a:lower()
 		b = b:lower()
 	end
