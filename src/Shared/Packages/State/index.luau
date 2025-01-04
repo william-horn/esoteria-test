@@ -16,32 +16,32 @@ local Enums = Shared.Enums
 -- Packages & Types
 local Table = require(Shared.Types.Table)
 local bothAreIndexable = require(Packages.Util.Types.bothAreIndexable)
-local ValidationStatus = require(script.Parent.ValidationStatus)
+local ValidationStatus = require(Packages.ValidationStatus.index)
 
 -- State class
 local State = {}
 State.__index = State
 
+type StateValidator = (any) -> ValidationStatus.ValidationStatus?
+
 -- State types
 type self__State = {
-	_conditions: Table.FunctionArray,
+	_validators: { StateValidator },
 	_internalState: Table.Any,
 }
-
-type StateCondition = (internalState: Table.Any) -> ()
 
 export type State = typeof(setmetatable({} :: self__State, State))
 
 function State.new(initialState: any): State
 	local self = setmetatable({} :: self__State, State)
-	self._conditions = {}
+	self._validators = {}
 	self._internalState = initialState or nil
 
 	return self
 end
 
-function State:addCondition(condition: StateCondition): ()
-	self._conditions[#self._conditions + 1] = condition
+function State:addValidator(validator: StateValidator): ()
+	self._validators[#self._validators + 1] = validator
 end
 
 function State:set(state: any)
@@ -61,8 +61,8 @@ end
 function State:validate(): (boolean, { ValidationStatus.ValidationStatus })
 	local report: { ValidationStatus.ValidationStatus } = {}
 
-	for index: number = 1, #self._conditions do
-		local conditionResult: ValidationStatus.ValidationStatus? = self._conditions[index](self._internalState)
+	for index: number = 1, #self._validators do
+		local conditionResult: ValidationStatus.ValidationStatus? = self._validators[index](self._internalState)
 
 		if conditionResult and conditionResult.status == Enums.ValidationType.Rejected then
 			report[#report + 1] = conditionResult
