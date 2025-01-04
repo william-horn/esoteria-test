@@ -2,7 +2,7 @@
 
 type AnyTable = { [any]: any }
 
-export type Any = (...any) -> any
+export type Any = (...any) -> ...any
 
 export type String = (...string) -> string
 export type Number = (...number) -> number

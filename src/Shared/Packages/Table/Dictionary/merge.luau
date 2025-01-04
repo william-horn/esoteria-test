@@ -5,13 +5,13 @@ local Shared = game.ReplicatedStorage.Shared
 local Table = require(Shared.Types.Table)
 
 --[[
-	@desc: Merges two tables (dictionaries) into one
+	@desc: Merges dictionary table `a` into dictionary table `b`
 	@param <table> a
 	@param <table> b
 	@param <boolean> overwrite - If true, values from a will overwrite values in b
 	@returns: <table> c
 ]]
-local function merge(a: Table.Any, b: Table.Any, overwrite: boolean): Table.Any
+local function merge(a: Table.Any, b: Table.Any, overwrite: boolean?): Table.Any
 	local c: Table.Any = table.clone(b)
 
 	for k: any, v: any in next, a do
