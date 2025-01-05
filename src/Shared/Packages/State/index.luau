@@ -9,20 +9,20 @@
 ]]
 
 -- Directories
-local Shared = game.ReplicatedStorage.Shared
+local Shared = game:GetService("ReplicatedStorage").Shared
 local Packages = Shared.Packages
 local Enums = Shared.Enums
 
 -- Packages & Types
 local Table = require(Shared.Types.Table)
 local bothAreIndexable = require(Packages.Util.Types.bothAreIndexable)
-local ValidationStatus = require(Packages.ValidationStatus.index)
+local ValidationStatus = require(Packages.Util.Classes.ValidationStatus)
 
 -- State class
 local State = {}
 State.__index = State
 
-type StateValidator = (any) -> ValidationStatus.ValidationStatus?
+type StateValidator = (any) -> ValidationStatus.Log?
 
 -- State types
 type self__State = {
@@ -58,11 +58,11 @@ function State:update(state: any)
 	end
 end
 
-function State:validate(): (boolean, { ValidationStatus.ValidationStatus })
-	local report: { ValidationStatus.ValidationStatus } = {}
+function State:validate(): (boolean, { ValidationStatus.Log })
+	local report: { ValidationStatus.Log } = {}
 
 	for index: number = 1, #self._validators do
-		local conditionResult: ValidationStatus.ValidationStatus? = self._validators[index](self._internalState)
+		local conditionResult: ValidationStatus.Log? = self._validators[index](self._internalState)
 
 		if conditionResult and conditionResult.status == Enums.ValidationType.Rejected then
 			report[#report + 1] = conditionResult

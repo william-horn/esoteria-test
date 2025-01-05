@@ -5,7 +5,7 @@
 	@written: 12/15/2024
 ]]
 
-local Shared = game.ReplicatedStorage.Shared
+local Shared = game:GetService("ReplicatedStorage").Shared
 
 -- Types
 local Table = require(Shared.Types.Table)
@@ -37,7 +37,7 @@ local isTable: Function.BooleanResult = require(Shared.Packages.Util.Types.isTab
 	For example, this will ignore any value of "a" in the tree:
 
 	```lua
-		deepScan(t, function(got)
+		deepCopy(t, function(got)
 			if (got.value == "a") then
 				got.ignore = true
 			end
@@ -76,7 +76,7 @@ local isTable: Function.BooleanResult = require(Shared.Packages.Util.Types.isTab
 	### Example of stopping table coping once past a certain depth:
 
 	```lua
-		deepScan(t, function(got)
+		deepCopy(t, function(got)
 			if (got.depth == 3) then
 				got.terminate = true
 				return 
@@ -87,15 +87,15 @@ local isTable: Function.BooleanResult = require(Shared.Packages.Util.Types.isTab
 	### Example of changing keys/values in table copy:
 
 	```lua
-		deepScan(t, function(got)
+		deepCopy(t, function(got)
 			got.key = tostring(got.key) .. " - modified"
 			got.value = tostring(got.value) .. " - modified"
 		end)
 	```
 ]]
-local function deepScan(t: Table.Any, callback: (got: EntrySettings) -> ()): Table.Any
-	if callback and not isFunction(callback) then
-		error("Callback passed to deepScan() must be nil or a function")
+local function deepCopy(t: Table.Any, callback: (got: EntrySettings) -> ()?): Table.Any
+	if not isFunction(callback) then
+		error("Callback passed to deepCopy() must be nil or a function")
 	end
 
 	local tree: Table.Any = {}
@@ -147,4 +147,4 @@ local function deepScan(t: Table.Any, callback: (got: EntrySettings) -> ()): Tab
 	return tree
 end
 
-return deepScan
+return deepCopy

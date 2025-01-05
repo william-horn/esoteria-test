@@ -1,11 +1,10 @@
-local Shared = game.ReplicatedStorage.Shared
+--!strict
+
+local Shared = game:GetService("ReplicatedStorage").Shared
+local Server = game:GetService("ServerScriptService").Server
 local Packages = Shared.Packages
 local Enums = Shared.Enums
 
-local splitWith = require(Packages.String.Util.splitWith)
-local StringEscaper = require(Packages.String.Classes.StringEscaper)
-local matchesQuery = require(Packages.Table.matchesQuery)
-local State = require(Packages.State.index)
-local ValidationStatus = require(Packages.ValidationStatus.index)
+local Network = require(Server.Packages.Network.index)
 
 return true

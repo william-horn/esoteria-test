@@ -7,7 +7,7 @@
 	Used for querying tables or comparing tables
 ]]
 
-local Shared = game.ReplicatedStorage.Shared
+local Shared = game:GetService("ReplicatedStorage").Shared
 
 local Table = require(Shared.Types.Table)
 
@@ -20,7 +20,7 @@ export type QueryOptions = {
 
 local bothAreTables = require(Shared.Packages.Util.Types.bothAreTables)
 local isMatch = require(Shared.Packages.Util.isMatch)
-local size = require(Shared.Packages.Table.size)
+local size = require(Shared.Packages.Table.Util.size)
 
 --[[
 	options:

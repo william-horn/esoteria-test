@@ -1,6 +1,6 @@
 --!strict
 
-local Shared = game.ReplicatedStorage.Shared
+local Shared = game:GetService("ReplicatedStorage").Shared
 
 local Table = require(Shared.Types.Table)
 

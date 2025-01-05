@@ -1,6 +1,6 @@
 --!strict
 
-local Enums = game.ReplicatedStorage.Shared.Enums
+local Enums = game:GetService("ReplicatedStorage").Shared.Enums
 local MachineType = Enums.MachineType
 
 local isServer = require(script.Parent.isServer)

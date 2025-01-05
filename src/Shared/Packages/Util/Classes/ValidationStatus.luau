@@ -1,7 +1,7 @@
 --!strict
 
 -- Directories
-local Shared = game.ReplicatedStorage.Shared
+local Shared = game:GetService("ReplicatedStorage").Shared
 
 local Custom = require(Shared.Types.Custom)
 
@@ -16,9 +16,9 @@ type self__ValidationStatus = {
 	message: string,
 }
 
-export type ValidationStatus = typeof(setmetatable({} :: self__ValidationStatus, ValidationStatus))
+export type Log = typeof(setmetatable({} :: self__ValidationStatus, ValidationStatus))
 
-function ValidationStatus.new(status: Custom.EnumItem, reason: Custom.EnumItem, message: string): ValidationStatus
+function ValidationStatus.new(status: Custom.EnumItem, reason: Custom.EnumItem, message: string): Log
 	local self: self__ValidationStatus = {
 		status = status,
 		reason = reason,

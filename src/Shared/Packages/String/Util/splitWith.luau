@@ -7,7 +7,7 @@ export type SplitOptions = {
 	usePatterns: boolean,
 }
 
-local Shared = game.ReplicatedStorage.Shared
+local Shared = game:GetService("ReplicatedStorage").Shared
 
 local Table = require(Shared.Types.Table)
 local StringEscaper = require(Shared.Packages.String.Classes.StringEscaper)
