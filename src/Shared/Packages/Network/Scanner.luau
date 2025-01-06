@@ -5,28 +5,49 @@ local Packages = Shared.Packages
 local Enums = Shared.Enums
 local NetworkEnums = Enums.Network
 
-local Table = require(Shared.Types.Table)
-local Custom = require(Shared.Types.Custom)
-local NetworkType = require(Packages.Network.Types)
+local UNRECOGNIZED_OBJECT_WARNING = 'Found unrecognized object "%s" in "%s"'
+local NO_REQUEST_HANDLERS_WARNING = 'No request handlers found for channel "%s"'
+local MISSING_REMOTE_ERROR = 'Missing Remote for channel "%s"'
+
+-- local TABLE = require(Shared.Types.Table)
+local ENUM = require(Shared.Types.Enum)
+local NETWORK = require(Shared.Types.Network)
 
 local isFolder = require(Packages.Util.Types.isFolder)
 local isRemote = require(Packages.Util.Types.isRemote)
 local isModule = require(Packages.Util.Types.isModule)
-local requireModules = require(Packages.Util.requireModules)
 local getRemoteInfo = require(Packages.Network.getRemoteInfo)
 local State = require(Packages.State.index)
+-- local ValidationStatus = require(Packages.Util.Classes.ValidationStatus)
 
 local require = require
 
 local Scanner = {}
 
-local function findFolderFrom(origin: Instance, enum: Custom.EnumItem, name: string): Instance?
-	if not isFolder(origin) then
-		error('Network tree failed: "' .. origin:GetFullName() .. '" is not a Folder')
-	elseif not enum:FindFirstChild(name) then
-		error('Network tree failed: "' .. name .. '" is not a valid ' .. enum.Name .. " enum")
+local function requireModuleIfExists(module: Instance?, default: any): any
+	if not (module and isModule(module)) then
+		return default
 	end
 
+	return require(module)
+end
+
+local function compileRequestsTable(requestsFolder: Folder): NETWORK.Requests
+	local requests: NETWORK.Requests = {}
+
+	for _, requestFolder: Instance in next, requestsFolder:GetChildren() do
+		if not isFolder(requestFolder) then
+			warn(UNRECOGNIZED_OBJECT_WARNING:format(requestFolder.Name, requestsFolder:GetFullName()))
+			continue
+		end
+
+		local requestData = {} :: NETWORK.Request
+	end
+
+	return requests
+end
+
+local function findFolderFrom(origin: Instance, enum: ENUM.Item, name: string): Instance?
 	local folder: Instance? = origin:FindFirstChild(name)
 
 	if not folder then
@@ -42,8 +63,8 @@ local function findFolderFrom(origin: Instance, enum: Custom.EnumItem, name: str
 	return folder
 end
 
-function Scanner:createNetworkTree(networks: NetworkType.Group): NetworkType.Tree
-	local networkTree = {} :: NetworkType.Tree
+function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
+	local networkTree = {} :: NETWORK.Tree
 
 	for _, sharedProtocolFolder: Instance in next, networks.SharedNetwork:GetChildren() do
 		local localProtocolFolder: Instance? =
@@ -53,7 +74,7 @@ function Scanner:createNetworkTree(networks: NetworkType.Group): NetworkType.Tre
 			continue
 		end
 
-		local channels: NetworkType.Channels = {}
+		local channels: NETWORK.Channels = {}
 
 		for _, sharedChannelFolder: Instance in next, sharedProtocolFolder:GetChildren() do
 			local localChannelFolder: Instance? =
@@ -63,44 +84,39 @@ function Scanner:createNetworkTree(networks: NetworkType.Group): NetworkType.Tre
 				continue
 			end
 
+			local channel = {} :: NETWORK.Channel
+
 			local remote: Instance? = sharedChannelFolder:FindFirstChild("Remote")
 			local settingsModule: Instance? = localChannelFolder:FindFirstChild("Settings")
-			local requestHandlersFolder: Instance? = localChannelFolder:FindFirstChild("RequestHandlers")
+			local stateModule: Instance? = localChannelFolder:FindFirstChild("State")
+			local validatorModule: Instance? = localChannelFolder:FindFirstChild("Validator")
+			local requestsFolder: Instance? = localChannelFolder:FindFirstChild("Requests")
 
-			local settings: Table.Any
-			local requestHandlers: NetworkType.RequestHandlers
-
+			-- Find the Remote instance for the channel
 			if not (remote and isRemote(remote)) then
-				error('Channel "' .. sharedChannelFolder:GetFullName() .. '" is missing a Remote')
-			end
-
-			if not (settingsModule and isModule(settingsModule)) then
-				settings = {}
+				error(MISSING_REMOTE_ERROR:format(sharedChannelFolder:GetFullName()))
 			else
-				settings = require(settingsModule)
+				channel.remote = remote
 			end
 
-			if not (requestHandlersFolder and isFolder(requestHandlersFolder)) then
-				warn('Channel "' .. sharedChannelFolder:GetFullName() .. '" has no RequestHandlers')
-				requestHandlers = {}
+			-- Get the settings for the channel
+			channel.settings = requireModuleIfExists(settingsModule, {})
+
+			-- Get the state for the channel
+			channel.state = State.new(requireModuleIfExists(stateModule, {}))
+
+			-- Get the validator function for the channel
+			if validatorModule and isModule(validatorModule) then
+				channel.state:addValidator(require(validatorModule))
+			end
+
+			-- Get the requests table for the channel
+			if not (requestsFolder and isFolder(requestsFolder)) then
+				warn(NO_REQUEST_HANDLERS_WARNING:format(sharedChannelFolder:GetFullName()))
+				channel.requests = {}
 			else
-				requestHandlers = requireModules(
-					requestHandlersFolder:GetChildren(),
-					function(got: { key: any, value: any })
-						local requestData: NetworkType.Request = {
-							process = require(got.value),
-							lastSent = nil,
-						}
-
-						got.value = requestData
-					end
-				)
+				channel.requests = compileRequestsTable(requestsFolder)
 			end
-
-			local channel = {} :: NetworkType.Channel
-			channel.remote = remote :: NetworkType.Remote
-			channel.settings = State.new(settings)
-			channel.requestHandlers = requestHandlers
 
 			channels[sharedChannelFolder.Name] = channel
 		end

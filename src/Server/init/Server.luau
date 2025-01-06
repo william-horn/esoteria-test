@@ -6,14 +6,37 @@ local Packages = Shared.Packages
 local Enums = Shared.Enums
 
 local Network = require(Server.Packages.Network.index)
-local NetworkType = require(Packages.Network.Types)
 Network:listen()
 
-print(Network._tree)
+local success, dispatchReport = Network:sendTCP({
+	channel = Enums.Network.Channel.Channel,
+	request = Enums.Network.Request.Generic,
+}, {
+	body = "Some text",
+})
 
-Network:sendTCP({
-	channel = Enums.Network.Channel,
-	request = Enums.Network.Request,
-}, {})
+success, dispatchReport = Network:sendTCP({
+	channel = Enums.Network.Channel.Channel,
+	request = Enums.Network.Request.Generic,
+}, {
+	body = "Some text",
+})
+
+success, dispatchReport = Network:sendTCP({
+	channel = Enums.Network.Channel.Channel,
+	request = Enums.Network.Request.Generic,
+}, {
+	body = "Some text",
+})
+
+success, dispatchReport = Network:sendTCP({
+	channel = Enums.Network.Channel.Channel,
+	request = Enums.Network.Request.Generic,
+}, {
+	body = "Some text",
+})
+
+print(Network)
+print("Dispatch result: ", success, dispatchReport)
 
 return true

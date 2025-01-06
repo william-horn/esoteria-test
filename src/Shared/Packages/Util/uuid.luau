@@ -5,7 +5,7 @@
 	source: https://gist.github.com/jrus/3197011
 ]]
 
-local Shared = game.ReplicatedStorage.Shared
+local Shared = game:GetService("ReplicatedStorage").Shared
 local newSeed = require(Shared.Packages.Math.newSeed)
 
 newSeed()

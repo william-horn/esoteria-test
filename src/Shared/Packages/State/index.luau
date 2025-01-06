@@ -14,7 +14,8 @@ local Packages = Shared.Packages
 local Enums = Shared.Enums
 
 -- Packages & Types
-local Table = require(Shared.Types.Table)
+local TABLE = require(Shared.Types.Table)
+
 local bothAreIndexable = require(Packages.Util.Types.bothAreIndexable)
 local ValidationStatus = require(Packages.Util.Classes.ValidationStatus)
 
@@ -22,17 +23,21 @@ local ValidationStatus = require(Packages.Util.Classes.ValidationStatus)
 local State = {}
 State.__index = State
 
-type StateValidator = (any) -> ValidationStatus.Log?
-
 -- State types
+type StateValidator = (any) -> (boolean, string?)
+type StateUpdater = (prev: any) -> any
+
 type self__State = {
 	_validators: { StateValidator },
-	_internalState: Table.Any,
+	_internalState: TABLE.Any,
 }
 
-export type State = typeof(setmetatable({} :: self__State, State))
+export type Validator = StateValidator
+export type Updater = StateUpdater
+export type Self = typeof(setmetatable({} :: self__State, State))
+export type Array = { Self }
 
-function State.new(initialState: any): State
+function State.new(initialState: any): Self
 	local self = setmetatable({} :: self__State, State)
 	self._validators = {}
 	self._internalState = initialState or nil
@@ -44,32 +49,38 @@ function State:addValidator(validator: StateValidator): ()
 	self._validators[#self._validators + 1] = validator
 end
 
-function State:set(state: any)
+function State:set(state: any): ()
 	self._internalState = state
 end
 
-function State:update(state: any)
+function State:get(): TABLE.Any
+	return self._internalState
+end
+
+function State:update(state: any): ()
 	if bothAreIndexable(state, self._internalState) then
-		for key: any, value: any in next, state do
-			self._internalState[key] = value
+		for key: any, stateUpdater: StateUpdater in next, state do
+			self._internalState[key] = stateUpdater(self._internalState[key])
 		end
 	else
 		self:set(state)
 	end
 end
 
-function State:validate(): (boolean, { ValidationStatus.Log })
-	local report: { ValidationStatus.Log } = {}
+function State:validate(): (boolean, ValidationStatus.Array)
+	local validationReport: ValidationStatus.Array = {}
 
 	for index: number = 1, #self._validators do
-		local conditionResult: ValidationStatus.Log? = self._validators[index](self._internalState)
+		local success: boolean, _message: string? = self._validators[index](self._internalState)
+		local message: string = if _message then _message else "No description"
 
-		if conditionResult and conditionResult.status == Enums.ValidationType.Rejected then
-			report[#report + 1] = conditionResult
+		if not success then
+			local validationLog: ValidationStatus.Self = ValidationStatus.new(Enums.Validation.Rejected, message)
+			validationReport[#validationReport + 1] = validationLog
 		end
 	end
 
-	return #report == 0, report
+	return #validationReport == 0, validationReport
 end
 
 return State
