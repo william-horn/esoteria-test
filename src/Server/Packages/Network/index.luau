@@ -15,7 +15,6 @@ local INVALID_HEADERS_ERROR: string = "Failed to dispatch remote due to missing 
 local Custom = require(Shared.Types.Custom)
 local Table = require(Shared.Types.Table)
 local NetworkType = require(Packages.Network.Types)
-local ValidationStatus = require(Packages.Util.Classes.ValidationStatus)
 local NetworkScanner = require(Packages.Network.Scanner)
 
 local NetworkTree: NetworkType.Tree = NetworkScanner:createNetworkTree({
@@ -23,14 +22,37 @@ local NetworkTree: NetworkType.Tree = NetworkScanner:createNetworkTree({
 	LocalNetwork = Server.Network,
 })
 
-local Network = {}
+local Network: Table.StringKey = {}
+Network._tree = NetworkTree
 
-function Network:dispatch(headers: NetworkType.Headers, payload: NetworkType.Payload): { ValidationStatus.Log }
+local function handleRequest(
+	requestHandlers: NetworkType.RequestHandlers
+): (fromPlayer: Player, headers: NetworkType.Headers, payload: NetworkType.Payload) -> ()
+	--
+	return function(fromPlayer: Player, headers: NetworkType.Headers, payload: NetworkType.Payload)
+		local request: Custom.EnumItem = headers.request
+		local requestData: NetworkType.Request = requestHandlers[request.Name]
+
+		if not requestData then
+			error('Received a bad request "' .. request.Name .. '" from player: "' .. fromPlayer.Name)
+		else
+			print('Received request "' .. request.Name .. '" from player: ' .. fromPlayer.Name)
+		end
+
+		requestData.process(headers, payload)
+	end
+end
+
+function Network:dispatch(
+	headers: NetworkType.Headers,
+	payload: NetworkType.Payload
+): (boolean, NetworkType.DispatchReport)
 	local dependencies: Table.AnyArray? = headers.dependencies
 	local protocol: Custom.EnumItem = headers.protocol
 	local channel: Custom.EnumItem = headers.channel
 	local request: Custom.EnumItem = headers.request
 
+	-- Validate required headers
 	if not protocol then
 		error(INVALID_HEADERS_ERROR:format("protocol"))
 	end
@@ -43,45 +65,76 @@ function Network:dispatch(headers: NetworkType.Headers, payload: NetworkType.Pay
 		error(INVALID_HEADERS_ERROR:format("request"))
 	end
 
-	local requestData = NetworkTree[protocol.Name][channel.Name][request.Name]
+	-- Retrieve the network location to fire from
+	local protocolData: NetworkType.Protocol = NetworkTree[protocol.Name]
+	local channelData: NetworkType.Channel = protocolData.channels[channel.Name]
+	local requestData: NetworkType.Request = channelData[request.Name]
 
 	if not requestData then
 		error('Invalid request ("' .. request.Name .. '" is not a valid request for channel "' .. channel.Name .. '"')
 	end
 
-	local success: boolean, validationReport: { ValidationStatus.Log } = requestData.remoteState:validate()
+	-- Validate the remote dispatch locally
+	local success: boolean, validationReport: NetworkType.DispatchReport = channelData.settings:validate()
 
-	return validationReport
+	if success then
+		if headers.sendAll then
+			channelData.remote:FireAllClients(headers, payload)
+		elseif headers.toPlayers then
+			for _, player in next, headers.toPlayers do
+				channelData.remote[protocolData.remoteInfo.dispatch](channelData.remote, player, headers, payload)
+			end
+		end
+	end
+
+	return success, validationReport
 end
 
-function Network:sendTCP(headers: NetworkType.Headers, payload: NetworkType.Payload)
+function Network:sendTCP(headers: NetworkType.Headers, payload: NetworkType.Payload): NetworkType.DispatchReport
 	headers.protocol = NetworkEnums.Protocol.TCPEvent
 	return self:dispatch(headers, payload)
 end
 
-function Network:requestTCP(headers: NetworkType.Headers, payload: NetworkType.Payload)
+function Network:requestTCP(headers: NetworkType.Headers, payload: NetworkType.Payload): NetworkType.DispatchReport
 	headers.protocol = NetworkEnums.Protocol.TCPRequest
 	return self:dispatch(headers, payload)
 end
 
-function Network:sendUDP(headers: NetworkType.Headers, payload: NetworkType.Payload)
+function Network:sendUDP(headers: NetworkType.Headers, payload: NetworkType.Payload): NetworkType.DispatchReport
 	headers.protocol = NetworkEnums.Protocol.UDPEvent
 	return self:dispatch(headers, payload)
 end
 
 function Network:listen(): ()
-	for _, protocol: NetworkType.Protocol in next, NetworkTree do
-		for _, channel: NetworkType.Channel in next, protocol do
+	for protocolName: string, protocol: NetworkType.Protocol in next, NetworkTree do
+		-- If there are no channels for this protocol, then skip
+		if not next(protocol.channels) then
+			continue
+		end
+
+		print("Preparing [" .. protocolName .. "] listeners...")
+		local remoteInfo: NetworkType.RemoteInfo = protocol.remoteInfo
+
+		for channelName: string, channel: NetworkType.Channel in next, protocol.channels do
+			-- If there are no request handlers for this channel, then don't create any listeners
+			if not next(channel.requestHandlers) then
+				continue
+			end
+
+			--[[
+				This is a technical type error but this will not cause any issues. `channel.remote`
+				can be any kind of remote, so the linter does not like the ambiguity of indexing
+				that union with `remoteInfo.listener` even though that won't cause an issue.
+			]]
+			if remoteInfo.connectionType == Enums.SignalConnection.Event then
+				channel.remote[remoteInfo.listener]:Connect(handleRequest(channel.requestHandlers))
+			elseif remoteInfo.connectionType == Enums.SignalConnection.Callback then
+				channel.remote[remoteInfo.listener] = handleRequest(channel.requestHandlers)
+			end
+
+			print('Created listeners for channel "' .. channelName .. '"')
 		end
 	end
 end
-
-Network:sendTCP({
-	channel = NetworkEnums.Protocol.TCPEvent,
-	request = NetworkEnums.Request.Generic,
-	dependencies = {},
-}, {
-	playerName = "Will",
-})
 
 return Network

@@ -7,11 +7,21 @@ local require = require
 
 type RequiredModules = { [string]: any }
 
-local function requireModules(modules: { Instance }): RequiredModules
+local function requireModules(modules: { Instance }, callback: (got: { key: any, value: any }) -> ()?): RequiredModules
 	local package: RequiredModules = {}
 
 	for _, module: Instance in next, modules do
-		if isModule(module) then
+		local _isModule: boolean = isModule(module)
+
+		if _isModule and callback then
+			local got: { key: any, value: any } = {
+				key = module.Name,
+				value = module,
+			}
+
+			callback(got)
+			package[got.key] = got.value
+		elseif _isModule then
 			package[module.Name] = require(module)
 		else
 			warn(

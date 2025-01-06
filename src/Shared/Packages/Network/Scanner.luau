@@ -53,7 +53,7 @@ function Scanner:createNetworkTree(networks: NetworkType.Group): NetworkType.Tre
 			continue
 		end
 
-		local protocol: NetworkType.Protocol = {}
+		local channels: NetworkType.Channels = {}
 
 		for _, sharedChannelFolder: Instance in next, sharedProtocolFolder:GetChildren() do
 			local localChannelFolder: Instance? =
@@ -68,7 +68,7 @@ function Scanner:createNetworkTree(networks: NetworkType.Group): NetworkType.Tre
 			local requestHandlersFolder: Instance? = localChannelFolder:FindFirstChild("RequestHandlers")
 
 			local settings: Table.Any
-			local requestHandlers: { [string]: NetworkType.Request }
+			local requestHandlers: NetworkType.RequestHandlers
 
 			if not (remote and isRemote(remote)) then
 				error('Channel "' .. sharedChannelFolder:GetFullName() .. '" is missing a Remote')
@@ -84,20 +84,31 @@ function Scanner:createNetworkTree(networks: NetworkType.Group): NetworkType.Tre
 				warn('Channel "' .. sharedChannelFolder:GetFullName() .. '" has no RequestHandlers')
 				requestHandlers = {}
 			else
-				requestHandlers = requireModules(requestHandlersFolder:GetChildren())
+				requestHandlers = requireModules(
+					requestHandlersFolder:GetChildren(),
+					function(got: { key: any, value: any })
+						local requestData: NetworkType.Request = {
+							process = require(got.value),
+							lastSent = nil,
+						}
+
+						got.value = requestData
+					end
+				)
 			end
 
 			local channel = {} :: NetworkType.Channel
 			channel.remote = remote :: NetworkType.Remote
-			channel.remoteState = State.new({ timesFired = 0 })
-			channel.remoteInfo = getRemoteInfo(channel.remote)
+			channel.settings = State.new(settings)
 			channel.requestHandlers = requestHandlers
-			channel.settings = settings
 
-			protocol[sharedChannelFolder.Name] = channel
+			channels[sharedChannelFolder.Name] = channel
 		end
 
-		networkTree[sharedProtocolFolder.Name] = protocol
+		networkTree[sharedProtocolFolder.Name] = {
+			remoteInfo = getRemoteInfo(NetworkEnums.Protocol[sharedProtocolFolder.Name]),
+			channels = channels,
+		}
 	end
 
 	return networkTree
