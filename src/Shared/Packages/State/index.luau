@@ -24,20 +24,17 @@ local State = {}
 State.__index = State
 
 -- State types
-type StateValidator = (any) -> (boolean, string?)
-type StateUpdater = (prev: any) -> any
-
 type self__State = {
 	_validators: { StateValidator },
 	_internalState: TABLE.Any,
 }
 
-export type Validator = StateValidator
-export type Updater = StateUpdater
-export type Self = typeof(setmetatable({} :: self__State, State))
-export type Array = { Self }
+export type StateValidator = (any) -> (boolean, string?)
+export type StateUpdater = (prev: any) -> any
+export type State = typeof(setmetatable({} :: self__State, State))
+export type Array = { State }
 
-function State.new(initialState: any): Self
+function State.new(initialState: any): State
 	local self = setmetatable({} :: self__State, State)
 	self._validators = {}
 	self._internalState = initialState or nil
@@ -75,7 +72,8 @@ function State:validate(): (boolean, ValidationStatus.Array)
 		local message: string = if _message then _message else "No description"
 
 		if not success then
-			local validationLog: ValidationStatus.Self = ValidationStatus.new(Enums.Validation.Rejected, message)
+			local validationLog: ValidationStatus.ValidationStatus =
+				ValidationStatus.new(Enums.Validation.Rejected, message)
 			validationReport[#validationReport + 1] = validationLog
 		end
 	end

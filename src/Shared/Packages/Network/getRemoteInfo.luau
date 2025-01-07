@@ -8,7 +8,7 @@ local connectionType = Shared.Enums.SignalConnection
 
 -- Dependencies
 local NetworkType = require(Packages.Network.Types)
-local Custom = require(Shared.Types.Custom)
+local ENUM = require(Shared.Types.Enum)
 
 local isClient = require(Packages.System.isClient)
 local isBindableEvent = require(Packages.Util.Types.isBindableEvent)
@@ -16,7 +16,7 @@ local isBindableFunction = require(Packages.Util.Types.isBindableFunction)
 local isRemoteEvent = require(Packages.Util.Types.isRemoteEvent)
 local isRemoteFunction = require(Packages.Util.Types.isRemoteFunction)
 
-local function getRemoteInfo(remote: Custom.EnumItem? | NetworkType.Remote?): NetworkType.RemoteInfo
+local function getRemoteInfo(remote: ENUM.EnumItem? | NetworkType.Remote?): NetworkType.RemoteInfo
 	local remoteInfo = {} :: NetworkType.RemoteInfo
 
 	if not remote then

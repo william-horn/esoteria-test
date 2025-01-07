@@ -8,8 +8,8 @@
 local Shared = game:GetService("ReplicatedStorage").Shared
 
 -- Types
-local Table = require(Shared.Types.Table)
-local Function = require(Shared.Types.Function)
+local TABLE = require(Shared.Types.Table)
+local FUNCTION = require(Shared.Types.Function)
 
 export type EntrySettings = {
 	key: any,
@@ -19,12 +19,12 @@ export type EntrySettings = {
 	terminate: boolean,
 	ignore: boolean,
 	depth: number,
-	currentTable: Table.Any,
+	currentTable: TABLE.Any,
 }
 
 -- Packages
-local isFunction: Function.BooleanResult = require(Shared.Packages.Util.Types.isFunction)
-local isTable: Function.BooleanResult = require(Shared.Packages.Util.Types.isTable)
+local isFunction: FUNCTION.BooleanResult = require(Shared.Packages.Util.Types.isFunction)
+local isTable: FUNCTION.BooleanResult = require(Shared.Packages.Util.Types.isTable)
 
 --[[
 	Create a tree-like hierarchy table of another nested table with a
@@ -93,17 +93,17 @@ local isTable: Function.BooleanResult = require(Shared.Packages.Util.Types.isTab
 		end)
 	```
 ]]
-local function deepCopy(t: Table.Any, callback: (got: EntrySettings) -> ()?): Table.Any
+local function deepCopy(t: TABLE.Any, callback: (got: EntrySettings) -> ()?): TABLE.Any
 	if not isFunction(callback) then
 		error("Callback passed to deepCopy() must be nil or a function")
 	end
 
-	local tree: Table.Any = {}
-	local queue: Table.Array2D = { { t, tree, 1 } }
+	local tree: TABLE.Any = {}
+	local queue: TABLE.Array2D = { { t, tree, 1 } }
 
 	while #queue > 0 do
-		local set: Table.AnyArray = queue[#queue]
-		local dir: Table.Any, treeDir: Table.Any, depth: number = set[1], set[2], set[3]
+		local set: TABLE.AnyArray = queue[#queue]
+		local dir: TABLE.Any, treeDir: TABLE.Any, depth: number = set[1], set[2], set[3]
 		local count = 0
 
 		queue[#queue] = nil
@@ -129,7 +129,7 @@ local function deepCopy(t: Table.Any, callback: (got: EntrySettings) -> ()?): Ta
 			end
 
 			if isTable(got.value) and not got.treatAsValue then
-				local newDir: Table.Any = {}
+				local newDir: TABLE.Any = {}
 				treeDir[got.key] = newDir
 				queue[#queue + 1] = { got.value, newDir, depth + 1 }
 			else

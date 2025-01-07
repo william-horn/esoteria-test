@@ -56,7 +56,7 @@
 
 local Shared = game:GetService("ReplicatedStorage").Shared
 
-local Table = require(Shared.Types.Table)
+local TABLE = require(Shared.Types.Table)
 
 local isNumber = require(Shared.Packages.Util.Types.isNumber)
 local isTable = require(Shared.Packages.Util.Types.isTable)
@@ -82,13 +82,13 @@ type StringIdMap = {
 	[string]: number,
 }
 
-type self = {
+type self__StringEscaper = {
 	_stringToId: { [string]: number },
 	_escaped: EscapeDataMap,
 	prefix: string,
 }
 
-export type StringEscaper = typeof(setmetatable({} :: self, StringEscaper))
+export type StringEscaper = typeof(setmetatable({} :: self__StringEscaper, StringEscaper))
 
 --[[
 	StringEscaper:escape(text<string>):
@@ -223,10 +223,10 @@ end
 	@returns:
 		<StringEscaper>: the StringEscaper object
 ]]
-function StringEscaper.new(prefix: string, _escaped: Table.StringArray?): StringEscaper
-	local escaped: Table.StringArray = table.clone(_escaped or {}) :: Table.StringArray
+function StringEscaper.new(prefix: string, _escaped: TABLE.StringArray?): StringEscaper
+	local escaped: TABLE.StringArray = table.clone(_escaped or {}) :: TABLE.StringArray
 
-	local self = setmetatable({} :: self, StringEscaper)
+	local self = setmetatable({} :: self__StringEscaper, StringEscaper)
 
 	--[[
 		dict that maps encoded/decoded string segments

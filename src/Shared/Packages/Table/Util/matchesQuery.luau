@@ -9,7 +9,7 @@
 
 local Shared = game:GetService("ReplicatedStorage").Shared
 
-local Table = require(Shared.Types.Table)
+local TABLE = require(Shared.Types.Table)
 
 export type QueryOptions = {
 	strictlyEquals: boolean?,
@@ -36,14 +36,14 @@ local size = require(Shared.Packages.Table.Util.size)
 	shallowCheck<boolean>: Whether or not the function will deeply check values. If true, only top-level
 	entries will be checked.
 ]]
-local function matchesQuery(data: Table.Any, query: Table.Any, _options: QueryOptions?): boolean
+local function matchesQuery(data: TABLE.Any, query: TABLE.Any, _options: QueryOptions?): boolean
 	local options = _options or {} :: QueryOptions
-	local queue: Table.Array2D = { { data, query } }
+	local queue: TABLE.Array2D = { { data, query } }
 
 	while #queue > 0 do
-		local set: Table.AnyArray = queue[#queue]
+		local set: TABLE.AnyArray = queue[#queue]
 
-		local dataDir: Table.Any, queryDir: Table.Any = set[1], set[2]
+		local dataDir: TABLE.Any, queryDir: TABLE.Any = set[1], set[2]
 		queue[#queue] = nil
 
 		-- for strict equals case, keep track of query size:

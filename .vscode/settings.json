@@ -4,5 +4,5 @@
       "editor.formatOnSave": true,
   },
 
-	"robloxLsp.typeChecking.mode": "Strict"
+	// "robloxLsp.typeChecking.mode": "Strict"
 }

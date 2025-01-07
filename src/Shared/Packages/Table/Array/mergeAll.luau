@@ -2,13 +2,13 @@
 
 local Shared = game:GetService("ReplicatedStorage").Shared
 
-local Table = require(Shared.Types.Table)
+local TABLE = require(Shared.Types.Table)
 
-local function mergeAll(arrays: Table.Array2D): Table.AnyArray
-	local all: Table.AnyArray = {}
+local function mergeAll(arrays: TABLE.Array2D): TABLE.AnyArray
+	local all: TABLE.AnyArray = {}
 
 	for i: number = 1, #arrays do
-		local arr: Table.AnyArray = arrays[i]
+		local arr: TABLE.AnyArray = arrays[i]
 
 		for j: number = 1, #arr do
 			local value: any = arr[j]

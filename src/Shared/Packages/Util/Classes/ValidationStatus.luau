@@ -16,11 +16,11 @@ type self__ValidationStatus = {
 	message: string,
 }
 
-export type Self = typeof(setmetatable({} :: self__ValidationStatus, ValidationStatus))
-export type Array = { Self }
-export type Map = { [any]: Self }
+export type ValidationStatus = typeof(setmetatable({} :: self__ValidationStatus, ValidationStatus))
+export type Array = { ValidationStatus }
+export type Map = { [any]: ValidationStatus }
 
-function ValidationStatus.new(status: ENUM.Item, message: string): Self
+function ValidationStatus.new(status: ENUM.Item, message: string): ValidationStatus
 	local self: self__ValidationStatus = {
 		status = status,
 		-- reason = reason,

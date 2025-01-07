@@ -2,7 +2,7 @@
 
 local Shared = game:GetService("ReplicatedStorage").Shared
 
-local Table = require(Shared.Types.Table)
+local TABLE = require(Shared.Types.Table)
 
 --[[
 	@desc: Converts an array into a dictionary with the structure:
@@ -11,8 +11,8 @@ local Table = require(Shared.Types.Table)
 	@args: <array> arr
 	@returns: <dictionary> dict
 ]]
-local function toDict(arr: Table.AnyArray): Table.Any
-	local dict: Table.Any = {}
+local function toDict(arr: TABLE.AnyArray): TABLE.Any
+	local dict: TABLE.Any = {}
 
 	for i: number = 1, #arr do
 		local v: any = arr[i]

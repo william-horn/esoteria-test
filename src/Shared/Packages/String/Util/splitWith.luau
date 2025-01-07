@@ -9,7 +9,7 @@ export type SplitOptions = {
 
 local Shared = game:GetService("ReplicatedStorage").Shared
 
-local Table = require(Shared.Types.Table)
+local TABLE = require(Shared.Types.Table)
 local StringEscaper = require(Shared.Packages.String.Classes.StringEscaper)
 local trimAround = require(script.Parent.trimAround)
 
@@ -24,7 +24,7 @@ local trimAround = require(script.Parent.trimAround)
 		options<table>: (optional) A table of options
 	@returns: <table> splitStr
 ]]
-local function splitWith(str: string, delim: string, _options: SplitOptions?): Table.StringArray
+local function splitWith(str: string, delim: string, _options: SplitOptions?): TABLE.StringArray
 	local options: SplitOptions = _options or {} :: SplitOptions
 	-- options.usePatterns<boolean>: default - nil
 
@@ -36,7 +36,7 @@ local function splitWith(str: string, delim: string, _options: SplitOptions?): T
 		splitPattern = "[^" .. delim .. "]+"
 	end
 
-	local t: Table.StringArray = {}
+	local t: TABLE.StringArray = {}
 
 	for element: string in str:gmatch(splitPattern) do
 		t[#t + 1] = trimAround(element)

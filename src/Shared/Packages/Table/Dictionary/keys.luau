@@ -2,15 +2,15 @@
 
 local Shared = game:GetService("ReplicatedStorage").Shared
 
-local Table = require(Shared.Types.Table)
+local TABLE = require(Shared.Types.Table)
 
 --[[
 	@desc: Returns an array of all keys in a table
 	@args: <table> dict
 	@returns: <array> keys
 ]]
-local function keys(dict: Table.Any): Table.AnyArray
-	local arr: Table.AnyArray = {}
+local function keys(dict: TABLE.Any): TABLE.AnyArray
+	local arr: TABLE.AnyArray = {}
 
 	for k: any, _ in next, dict do
 		arr[#arr + 1] = k

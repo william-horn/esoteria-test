@@ -2,7 +2,7 @@
 
 local Shared = game:GetService("ReplicatedStorage").Shared
 
-local Table = require(Shared.Types.Table)
+local TABLE = require(Shared.Types.Table)
 
 --[[
 	@desc:
@@ -11,9 +11,9 @@ local Table = require(Shared.Types.Table)
 		Example:
 			reduce({1,1,1,2,3}) -> {1,2,3}
 ]]
-local function reduce(t: Table.AnyArray): Table.AnyArray
-	local unique: Table.AnyArray = {}
-	local seen: Table.Any = {}
+local function reduce(t: TABLE.AnyArray): TABLE.AnyArray
+	local unique: TABLE.AnyArray = {}
+	local seen: TABLE.Any = {}
 
 	for _, v: any in next, t do
 		if not seen[v] then

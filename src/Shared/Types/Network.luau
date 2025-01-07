@@ -28,8 +28,8 @@ export type Headers = {
 export type Request = {
 	handler: (headers: Headers, payload: Payload) -> (),
 	lastSent: { headers: Headers, payload: Payload, [any]: nil },
-	state: State.Self,
-	validator: State.Validator?,
+	state: State.State,
+	validator: State.StateValidator?,
 	settings: TABLE.Any,
 	[any]: nil,
 }
@@ -40,7 +40,7 @@ export type Channel = {
 	remote: AnyRemote,
 	lastSent: { headers: Headers, payload: Payload, [any]: nil },
 	settings: TABLE.Any,
-	state: State.Self,
+	state: State.State,
 	requests: Requests,
 	[any]: nil,
 }

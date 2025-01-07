@@ -3,40 +3,10 @@
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Server = game:GetService("ServerScriptService").Server
 local Packages = Shared.Packages
-local Enums = Shared.Enums
 
-local Network = require(Server.Packages.Network.index)
-Network:listen()
+-- Enums
+local Enums = require(Shared.Enums.index)
+local EnumCategory = require(Shared.Enums.EnumCategory)
+local EnumItem = require(Shared.Enums.EnumItem)
 
-local success, dispatchReport = Network:sendTCP({
-	channel = Enums.Network.Channel.Channel,
-	request = Enums.Network.Request.Generic,
-}, {
-	body = "Some text",
-})
-
-success, dispatchReport = Network:sendTCP({
-	channel = Enums.Network.Channel.Channel,
-	request = Enums.Network.Request.Generic,
-}, {
-	body = "Some text",
-})
-
-success, dispatchReport = Network:sendTCP({
-	channel = Enums.Network.Channel.Channel,
-	request = Enums.Network.Request.Generic,
-}, {
-	body = "Some text",
-})
-
-success, dispatchReport = Network:sendTCP({
-	channel = Enums.Network.Channel.Channel,
-	request = Enums.Network.Request.Generic,
-}, {
-	body = "Some text",
-})
-
-print(Network)
-print("Dispatch result: ", success, dispatchReport)
-
-return true
+return nil
