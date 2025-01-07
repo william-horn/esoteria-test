@@ -1,7 +1,7 @@
 --!strict
 
 local Shared = game:GetService("ReplicatedStorage").Shared
-local ENUM = require(Shared.Types.Enum)
+local Enums = require(Shared.Enums.index)
 local TABLE = require(Shared.Types.Table)
 local State = require(Shared.Packages.State.index)
 -- local ValidationStatus = require(Shared.Packages.Util.Classes.ValidationStatus)
@@ -11,14 +11,14 @@ export type AnyRemote = RemoteEvent | RemoteFunction | UnreliableRemoteEvent | B
 export type ConnectionInfo = {
 	connector: string,
 	dispatcher: string,
-	type: ENUM.Item,
+	type: Enums.Enums,
 	[any]: nil,
 }
 
 export type Payload = TABLE.Any
 export type Headers = {
-	channel: ENUM.Item,
-	request: ENUM.Item,
+	channel: Enums.Enums,
+	request: Enums.Enums,
 	dependencies: TABLE.AnyArray?,
 	toPlayers: { Player }?,
 	sendAll: boolean?,

@@ -1,13 +1,20 @@
 --!strict
 
+--[[
+	@author: William J. Horn
+	@written: 1/6/2025
+
+	A custom enum item class with serialize/deserialize capabilities
+]]
+
 local Shared = game:GetService("ReplicatedStorage").Shared
 
-local TABLE = require(Shared.Types.Table)
+-- local TABLE = require(Shared.Types.Table)
 
 local isTable = require(Shared.Packages.Util.Types.isTable)
 local getId = require(Shared.Enums.getId)
 
-local EnumItem = {} :: TABLE.Class
+local EnumItem = {}
 EnumItem.__index = EnumItem
 
 EnumItem._itemCount = 0

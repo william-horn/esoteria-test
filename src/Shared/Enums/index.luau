@@ -1,19 +1,37 @@
 --!strict
 
+--[[
+	@author: William J. Horn
+	@written: 1/6/2025
+
+	Custom enums module. New enum categories can be created using the
+	EnumCategory class, and enum items are created using the EnumItem class.
+
+	Both EnumCategorys and EnumItems can be serialized/deserialized for
+	transmission using Enum.serialize() and Enum.deserialize()
+]]
+
 local Shared = game:GetService("ReplicatedStorage").Shared
 
-local TABLE = require(Shared.Types.Table)
+-- local TABLE = require(Shared.Types.Table)
 
 local EnumItem = require(Shared.Enums.EnumItem)
 local EnumCategory = require(Shared.Enums.EnumCategory)
 
-local Enums = {} :: TABLE.Class
+local Enums = {} :: {
+	serialize: (Enums) -> string,
+	deserialize: (string) -> Enums,
+	is: (any) -> boolean,
+	[string]: Enums,
+}
 
-function Enums.serialize(enum: EnumItem.EnumItem | EnumCategory.EnumCategory): string
+export type Enums = EnumItem.EnumItem | EnumCategory.EnumCategory
+
+function Enums.serialize(enum: Enums): string
 	return enum._id
 end
 
-function Enums.deserialize(serialized: string): EnumItem.EnumItem | EnumCategory.EnumCategory
+function Enums.deserialize(serialized: string): Enums
 	local type = serialized:match("[^:]+") :: string
 
 	if type == "EnumCategory" then
@@ -23,6 +41,10 @@ function Enums.deserialize(serialized: string): EnumItem.EnumItem | EnumCategory
 	else
 		error("Unable to deserialize Enum")
 	end
+end
+
+function Enums.is(value: any): boolean
+	return EnumItem.is(value) or EnumCategory.is(value)
 end
 
 do
@@ -60,9 +82,9 @@ end
 
 do
 	local SignalConnection = EnumCategory.new("SignalConnection")
-	SignalConnection.Any = EnumItem.new("Callback")
-	SignalConnection.Client = EnumItem.new("Event")
-	SignalConnection.Server = EnumItem.new("None")
+	SignalConnection.Callback = EnumItem.new("Callback")
+	SignalConnection.Event = EnumItem.new("Event")
+	SignalConnection.None = EnumItem.new("None")
 
 	Enums.SignalConnection = SignalConnection
 end

@@ -7,12 +7,12 @@
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Server = game:GetService("ServerScriptService").Server
 local Packages = Shared.Packages
-local Enums = Shared.Enums
+local Enums = require(Shared.Enums.index)
 local NetworkEnums = Enums.Network
 
 local INVALID_HEADERS_ERROR: string = "Failed to dispatch remote due to missing or invalid '%s' header"
 
-local ENUM = require(Shared.Types.Enum)
+(Shared.Types.Enum)
 local TABLE = require(Shared.Types.Table)
 local NETWORK = require(Shared.Types.Network)
 local NetworkScanner = require(Packages.Network.Scanner)
@@ -26,7 +26,7 @@ local function handleRequest(
 ): (fromPlayer: Player, headers: NETWORK.Headers, payload: NETWORK.Payload) -> ()
 	--
 	return function(fromPlayer: Player, headers: NETWORK.Headers, payload: NETWORK.Payload)
-		local request: ENUM.Item = headers.request
+		local request: Enums.Enums = headers.request
 		local requestData: NETWORK.Request = requests[request.Name]
 
 		if not requestData then
@@ -47,9 +47,9 @@ end
 
 function Network:dispatch(headers: NETWORK.Headers, payload: NETWORK.Payload): (boolean, ValidationStatus.Array)
 	local dependencies: TABLE.AnyArray? = headers.dependencies
-	local protocol: ENUM.Item = headers.protocol
-	local channel: ENUM.Item = headers.channel
-	local request: ENUM.Item = headers.request
+	local protocol: Enums.Enums = headers.protocol
+	local channel: Enums.Enums = headers.channel
+	local request: Enums.Enums = headers.request
 
 	-- Validate required headers
 	if not protocol then

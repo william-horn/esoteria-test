@@ -9,4 +9,6 @@ local Enums = require(Shared.Enums.index)
 local EnumCategory = require(Shared.Enums.EnumCategory)
 local EnumItem = require(Shared.Enums.EnumItem)
 
+local Proto: Enums.Enums = Enums.Network.Protocol
+
 return nil

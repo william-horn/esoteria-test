@@ -1,16 +1,24 @@
 --!strict
 
+--[[
+	@author: William J. Horn
+	@written: 1/6/2025
+
+	A custom enum category class with serialize/deserialize capabilities. Stores EnumItem
+	instances and provides an API for collecting all EnumItems
+]]
+
 local Shared = game:GetService("ReplicatedStorage").Shared
 
 local EnumItem = require(Shared.Enums.EnumItem)
 
-local TABLE = require(Shared.Types.Table)
+-- local TABLE = require(Shared.Types.Table)
 
 local isTable = require(Shared.Packages.Util.Types.isTable)
 local getValues = require(Shared.Packages.Table.Dictionary.values)
 local getId = require(Shared.Enums.getId)
 
-local EnumCategory = {} :: TABLE.Class
+local EnumCategory = {}
 EnumCategory.__index = EnumCategory
 
 EnumCategory._categoryCount = 0
@@ -21,7 +29,12 @@ type self__EnumCategory = {
 	name: string,
 	_items: EnumItem.Map,
 	_id: string,
+
+	-- ! bug
+	-- ROBLOX does not show intellisense for tables that have this type definition
+	-- Fix later
 	[string]: EnumCategory | EnumItem.EnumItem,
+	-- [string]: EnumCategory,
 }
 
 export type EnumCategory = typeof(setmetatable({} :: self__EnumCategory, EnumCategory))

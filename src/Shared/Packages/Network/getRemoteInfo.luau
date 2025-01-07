@@ -3,12 +3,12 @@
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Packages = Shared.Packages
 
-local NetworkEnums = Shared.Enums.Network
-local connectionType = Shared.Enums.SignalConnection
+local Enums = require(Shared.Enums.index)
+local NetworkEnums: Enums.Enums = Enums.Network
+local SignalConnection: Enums.Enums = Enums.SignalConnection
 
 -- Dependencies
-local NetworkType = require(Packages.Network.Types)
-local ENUM = require(Shared.Types.Enum)
+local NETWORK = require(Shared.Types.Network)
 
 local isClient = require(Packages.System.isClient)
 local isBindableEvent = require(Packages.Util.Types.isBindableEvent)
@@ -16,39 +16,39 @@ local isBindableFunction = require(Packages.Util.Types.isBindableFunction)
 local isRemoteEvent = require(Packages.Util.Types.isRemoteEvent)
 local isRemoteFunction = require(Packages.Util.Types.isRemoteFunction)
 
-local function getRemoteInfo(remote: ENUM.EnumItem? | NetworkType.Remote?): NetworkType.RemoteInfo
-	local remoteInfo = {} :: NetworkType.RemoteInfo
+local function getRemoteConnectionInfo(remote: Enums.Enums | NETWORK.AnyRemote | nil): NETWORK.ConnectionInfo
+	local connectionInfo = {} :: NETWORK.ConnectionInfo
 
 	if not remote then
-		remoteInfo.listener = ""
-		remoteInfo.dispatch = ""
-		remoteInfo.connectionType = connectionType.None
-		return remoteInfo
+		connectionInfo.connector = ""
+		connectionInfo.dispatcher = ""
+		connectionInfo.type = SignalConnection.None
+		return connectionInfo
 	end
 
 	if
-		isRemoteEvent(remote)
-		or remote == NetworkEnums.Protocol.TCPEvent
+		remote == NetworkEnums.Protocol.TCPEvent
 		or remote == NetworkEnums.Protocol.UDPEvent
+		or isRemoteEvent(remote)
 	then
-		remoteInfo.listener = if isClient() then "OnClientEvent" else "OnServerEvent"
-		remoteInfo.dispatch = if isClient() then "FireServer" else "FireClient"
-		remoteInfo.connectionType = connectionType.Event
+		connectionInfo.connector = if isClient() then "OnClientEvent" else "OnServerEvent"
+		connectionInfo.dispatcher = if isClient() then "FireServer" else "FireClient"
+		connectionInfo.type = SignalConnection.Event
 	elseif isRemoteFunction(remote) or remote == NetworkEnums.Protocol.TCPRequest then
-		remoteInfo.listener = if isClient() then "OnClientInvoke" else "OnServerInvoke"
-		remoteInfo.dispatch = if isClient() then "InvokeServer" else "InvokeClient"
-		remoteInfo.connectionType = connectionType.Callback
+		connectionInfo.connector = if isClient() then "OnClientInvoke" else "OnServerInvoke"
+		connectionInfo.dispatcher = if isClient() then "InvokeServer" else "InvokeClient"
+		connectionInfo.type = SignalConnection.Callback
 	elseif isBindableEvent(remote) or remote == NetworkEnums.Protocol.LocalEvent then
-		remoteInfo.listener = "Event"
-		remoteInfo.dispatch = "Fire"
-		remoteInfo.connectionType = connectionType.Event
+		connectionInfo.connector = "Event"
+		connectionInfo.dispatcher = "Fire"
+		connectionInfo.type = SignalConnection.Event
 	elseif isBindableFunction(remote) or remote == NetworkEnums.Protocol.LocalRequest then
-		remoteInfo.listener = "OnInvoke"
-		remoteInfo.dispatch = "Invoke"
-		remoteInfo.connectionType = connectionType.Callback
+		connectionInfo.connector = "OnInvoke"
+		connectionInfo.dispatcher = "Invoke"
+		connectionInfo.type = SignalConnection.Callback
 	end
 
-	return remoteInfo
+	return connectionInfo
 end
 
-return getRemoteInfo
+return getRemoteConnectionInfo

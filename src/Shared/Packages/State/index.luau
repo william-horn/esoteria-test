@@ -11,7 +11,7 @@
 -- Directories
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Packages = Shared.Packages
-local Enums = Shared.Enums
+local Enums = require(Shared.Enums.index)
 
 -- Packages & Types
 local TABLE = require(Shared.Types.Table)

@@ -2,7 +2,7 @@
 
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Packages = Shared.Packages
-local Enums = Shared.Enums
+local Enums = require(Shared.Enums.index)
 local NetworkEnums = Enums.Network
 
 local UNRECOGNIZED_OBJECT_WARNING = 'Found unrecognized object "%s" in "%s"'
@@ -10,7 +10,6 @@ local NO_REQUEST_HANDLERS_WARNING = 'No request handlers found for channel "%s"'
 local MISSING_REMOTE_ERROR = 'Missing Remote for channel "%s"'
 
 -- local TABLE = require(Shared.Types.Table)
-local ENUM = require(Shared.Types.Enum)
 local NETWORK = require(Shared.Types.Network)
 
 local isFolder = require(Packages.Util.Types.isFolder)
@@ -47,7 +46,7 @@ local function compileRequestsTable(requestsFolder: Folder): NETWORK.Requests
 	return requests
 end
 
-local function findFolderFrom(origin: Instance, enum: ENUM.Item, name: string): Instance?
+local function findFolderFrom(origin: Instance, enum: Enums.Enums, name: string): Instance?
 	local folder: Instance? = origin:FindFirstChild(name)
 
 	if not folder then
