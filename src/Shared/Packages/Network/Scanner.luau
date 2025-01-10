@@ -106,7 +106,7 @@ function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
 				continue
 			end
 
-			local channel = TableWithIndexError.new({}, "Field", "ChannelData") :: NETWORK.Channel
+			local channel = {} :: NETWORK.Channel
 			-- channel.lastSent = { headers = {}, payload = nil }
 
 			local remote: Instance? = sharedChannelFolder:FindFirstChild("Remote")
@@ -144,36 +144,34 @@ function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
 			-- Default channel validator
 			channel.state:addValidator(function(scope: TABLE.StringKeys, state: any)
 				-- Dependancy check
-				local dependencies = state.dependencies
-				local request = scope.reqest
+				local dependencies: TABLE.AnyArray? = scope.dependencies
+				-- local request: Enums.Enums = scope.request
+				local lastDependancies: TABLE.AnyArray? = state.dependencies
 
-				local lastSent: NETWORK.LastRequest = scope.lastSent
+				if not dependencies then
+					return true
+				end
 
-				if lastSent then
-					local lastHeaders: NETWORK.Headers = lastSent.headers
-					local lastDependancies: TABLE.AnyArray = lastHeaders.dependancies
+				if lastDependancies and #lastDependancies == #dependencies then
+					local sameValues: boolean = true
+					-- print("both dependency tables exist and are same size")
 
-					if dependencies and lastDependancies and #lastDependancies == dependencies then
-						local sameValues: boolean = true
-						-- print("both dependency tables exist and are same size")
-
-						-- Shallow-check if both dependency arrays are equal in content
-						for index: number = 1, #lastDependancies do
-							if lastDependancies[index] ~= dependencies[index] then
-								sameValues = false
-								break
-							end
+					-- Shallow-check if both dependency arrays are equal in content
+					for index: number = 1, #lastDependancies do
+						if lastDependancies[index] ~= dependencies[index] then
+							sameValues = false
+							break
 						end
+					end
 
-						-- if all dependencies are the same, then return out
-						if sameValues then
-							print(
-								'Dependencies are the same for request "'
-									.. tostring(request)
-									.. '", aborting dispatch...'
-							)
-							return false, "Aborted due to unchanged dependancy array"
-						end
+					-- if all dependencies are the same, then return out
+					if sameValues then
+						-- print(
+						-- 	'Dependencies are the same for request "'
+						-- 		.. tostring(request.name)
+						-- 		.. '", aborting dispatch...'
+						-- )
+						return false, "Aborted due to unchanged dependancy array"
 					end
 				end
 
@@ -183,10 +181,10 @@ function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
 			channels[sharedChannelFolder.Name] = channel
 		end
 
-		networkTree[sharedProtocolFolder.Name] = TableWithIndexError.new({
+		networkTree[sharedProtocolFolder.Name] = {
 			connectionInfo = getRemoteConnectionInfo(NetworkEnums.Protocol[sharedProtocolFolder.Name]),
 			channels = channels,
-		}, "Field", "ProtocolData") :: NETWORK.Protocol
+		} :: NETWORK.Protocol
 	end
 
 	return networkTree

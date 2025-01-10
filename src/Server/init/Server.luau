@@ -3,6 +3,7 @@
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Server = game:GetService("ServerScriptService").Server
 local Packages = Shared.Packages
+local Network = require(Server.Packages.Network.index):init()
 
 local TABLE = require(Shared.Types.Table)
 
@@ -11,10 +12,31 @@ local Enums = require(Shared.Enums.index)
 local EnumCategory = require(Shared.Enums.EnumCategory)
 local EnumItem = require(Shared.Enums.EnumItem)
 
-local TableWithIndexError = require(Packages.Util.Classes.TableWithIndexError)
+Network:sendTCP({
+	channel = Enums.Network.Channel.Channel,
+	request = Enums.Network.Request.Generic,
+	sendAll = true,
+	dependencies = { "something" },
+}, {
+	data = "test data",
+})
 
-local t: TABLE.Any = TableWithIndexError.new("Some Table")
+Network:sendTCP({
+	channel = Enums.Network.Channel.Channel,
+	request = Enums.Network.Request.Generic,
+	sendAll = true,
+	dependencies = { "something" },
+}, {
+	data = "test data",
+})
 
-print(t.something)
+Network:sendTCP({
+	channel = Enums.Network.Channel.Channel,
+	request = Enums.Network.Request.Generic,
+	sendAll = true,
+	dependencies = { "something1" },
+}, {
+	data = "test data",
+})
 
 return nil

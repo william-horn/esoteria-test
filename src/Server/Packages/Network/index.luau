@@ -20,7 +20,7 @@ local NetworkScanner = require(Packages.Network.Scanner)
 local ValidationStatus = require(Packages.Util.Classes.ValidationStatus)
 -- local State = require(Packages.State.index)
 
-local Network: TABLE.StringKeys = {}
+local Network = {}
 
 local function handleRequest(
 	requests: NETWORK.Requests
@@ -44,6 +44,7 @@ local function handleRequest(
 end
 
 function Network:dispatch(headers: NETWORK.Headers, payload: NETWORK.Payload): (boolean, ValidationStatus.Array)
+	print("Dispatching: ", headers, payload)
 	local dependencies: TABLE.AnyArray? = headers.dependencies
 	headers.dependencies = nil
 
@@ -71,18 +72,19 @@ function Network:dispatch(headers: NETWORK.Headers, payload: NETWORK.Payload): (
 
 	-- Validate the remote dispatch
 	local success: boolean, validationReport: ValidationStatus.Array = channelData.state:validate({
-		request = request,
-		lastSent = channelData.lastSent,
+		dependencies = dependencies,
 	})
 
 	-- Check remote channel validator
 	if not success then
+		print("ChannelData failed: ", validationReport)
 		return success, validationReport
 	else
 		-- Check remote request validator
 		success, validationReport = requestData.state:validate()
 
 		if not success then
+			print("Request failed: ", validationReport)
 			return success, validationReport
 		end
 	end
@@ -103,10 +105,11 @@ function Network:dispatch(headers: NETWORK.Headers, payload: NETWORK.Payload): (
 		}
 
 		channelData.lastSent = lastSent
+		requestData.lastSent = lastSent
 	end
 
 	channelData.state:update({
-		dependencies = function(): TABLE.StringArray
+		dependencies = function(): TABLE.AnyArray?
 			return dependencies
 		end,
 	})
@@ -121,6 +124,8 @@ function Network:dispatch(headers: NETWORK.Headers, payload: NETWORK.Payload): (
 			channelData.remote[protocolData.connectionInfo.dispatcher](player, headers, payload)
 		end
 	end
+
+	print("Dispatch successfully fired")
 
 	-- Return the dispatch results
 	return success, validationReport
@@ -141,7 +146,7 @@ function Network:sendUDP(headers: NETWORK.Headers, payload: NETWORK.Payload): (b
 	return self:dispatch(headers, payload)
 end
 
-function Network:init(): ()
+function Network:init(): any
 	-- Build the network tree responsible for storing channels, remote, requests, etc
 	local NetworkTree: NETWORK.Tree = NetworkScanner:createNetworkTree({
 		SharedNetwork = Shared.Network,
@@ -176,6 +181,8 @@ function Network:init(): ()
 			print('Created listeners for channel "' .. channelName .. '"')
 		end
 	end
+
+	return self
 end
 
 return Network
