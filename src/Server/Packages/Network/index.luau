@@ -44,7 +44,6 @@ local function handleRequest(
 end
 
 function Network:dispatch(headers: NETWORK.Headers, payload: NETWORK.Payload): (boolean, ValidationStatus.Array)
-	print("Dispatching: ", headers, payload)
 	local dependencies: TABLE.AnyArray? = headers.dependencies
 	headers.dependencies = nil
 
@@ -77,14 +76,12 @@ function Network:dispatch(headers: NETWORK.Headers, payload: NETWORK.Payload): (
 
 	-- Check remote channel validator
 	if not success then
-		print("ChannelData failed: ", validationReport)
 		return success, validationReport
 	else
 		-- Check remote request validator
 		success, validationReport = requestData.state:validate()
 
 		if not success then
-			print("Request failed: ", validationReport)
 			return success, validationReport
 		end
 	end
@@ -124,8 +121,6 @@ function Network:dispatch(headers: NETWORK.Headers, payload: NETWORK.Payload): (
 			channelData.remote[protocolData.connectionInfo.dispatcher](player, headers, payload)
 		end
 	end
-
-	print("Dispatch successfully fired")
 
 	-- Return the dispatch results
 	return success, validationReport
