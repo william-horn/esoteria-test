@@ -5,8 +5,6 @@ local Packages = Shared.Packages
 local Enums = require(Shared.Enums.index)
 local NetworkEnums = Enums.Network
 
--- local TABLE = require(Shared.Types.Table)
-
 local UNRECOGNIZED_OBJECT_WARNING: string = 'Found unrecognized object "%s" in "%s"'
 local NO_REQUEST_HANDLERS_WARNING: string = 'No request handlers found for channel "%s"'
 local MISSING_FOLDER_WARNING: string = 'Could not find local folder "%s"'
@@ -16,11 +14,12 @@ local MISSING_REMOTE_ERROR: string = 'Missing Remote for channel "%s"'
 local INVALID_CLASSNAME_ERROR = 'Invalid object class for "%s" (expected "%s", got "%s")'
 local INVALID_ENUM_ERROR = '"%s" is not a valid enum'
 
--- local TABLE = require(Shared.Types.Table)
 local NETWORK = require(Shared.Types.Network)
+local TABLE = require(Shared.Types.Table)
 
 local isFolder = require(Packages.Util.Types.isFolder)
 local isRemote = require(Packages.Util.Types.isRemote)
+-- local isRemoteEvent = require(Packages.Util.Types.isRemoteEvent)
 local isModule = require(Packages.Util.Types.isModule)
 local getRemoteConnectionInfo = require(Packages.Network.getRemoteConnectionInfo)
 local State = require(Packages.State.index)
@@ -40,7 +39,7 @@ local function requireModuleIfExists(module: Instance?, default: any): any
 end
 
 local function compileRequestsTable(requestsFolder: Folder): NETWORK.Requests
-	local requests = TableWithIndexError.new({}, "Request", "Channel") :: NETWORK.Requests
+	local requests = {} :: NETWORK.Requests
 
 	for _, requestFolder: Instance in next, requestsFolder:GetChildren() do
 		if not isFolder(requestFolder) then
@@ -49,6 +48,7 @@ local function compileRequestsTable(requestsFolder: Folder): NETWORK.Requests
 		end
 
 		local requestData = TableWithIndexError.new({}, "Field", "RequestData") :: NETWORK.Request
+		-- requestData.lastSent = { headers = {}, payload = nil }
 
 		local handlerModule: Instance? = requestFolder:FindFirstChild("Handler")
 		local settingsModule: Instance? = requestFolder:FindFirstChild("Settings")
@@ -79,7 +79,7 @@ local function findFolderFrom(origin: Instance, enum: Enums.Enums, name: string)
 		warn(INVALID_CLASSNAME_ERROR:format(folder.Name, "Folder", folder.ClassName))
 		return nil
 	elseif not Enums.is(enum[name]) then
-		error(INVALID_ENUM_ERROR:format(name))
+		error(INVALID_ENUM_ERROR:format(name), 2)
 	end
 
 	return folder
@@ -107,6 +107,7 @@ function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
 			end
 
 			local channel = TableWithIndexError.new({}, "Field", "ChannelData") :: NETWORK.Channel
+			-- channel.lastSent = { headers = {}, payload = nil }
 
 			local remote: Instance? = sharedChannelFolder:FindFirstChild("Remote")
 			local settingsModule: Instance? = localChannelFolder:FindFirstChild("Settings")
@@ -116,7 +117,7 @@ function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
 
 			-- Find the Remote instance for the channel
 			if not (remote and isRemote(remote)) then
-				error(MISSING_REMOTE_ERROR:format(sharedChannelFolder:GetFullName()))
+				error(MISSING_REMOTE_ERROR:format(sharedChannelFolder:GetFullName()), 2)
 			else
 				channel.remote = remote
 			end
@@ -137,8 +138,47 @@ function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
 				warn(NO_REQUEST_HANDLERS_WARNING:format(sharedChannelFolder:GetFullName()))
 				channel.requests = {}
 			else
-				channel.requests = compileRequestsTable(requestsFolder)
+				channel.requests = compileRequestsTable(requestsFolder :: Folder)
 			end
+
+			-- Default channel validator
+			channel.state:addValidator(function(scope: TABLE.StringKeys, state: any)
+				-- Dependancy check
+				local dependencies = state.dependencies
+				local request = scope.reqest
+
+				local lastSent: NETWORK.LastRequest = scope.lastSent
+
+				if lastSent then
+					local lastHeaders: NETWORK.Headers = lastSent.headers
+					local lastDependancies: TABLE.AnyArray = lastHeaders.dependancies
+
+					if dependencies and lastDependancies and #lastDependancies == dependencies then
+						local sameValues: boolean = true
+						-- print("both dependency tables exist and are same size")
+
+						-- Shallow-check if both dependency arrays are equal in content
+						for index: number = 1, #lastDependancies do
+							if lastDependancies[index] ~= dependencies[index] then
+								sameValues = false
+								break
+							end
+						end
+
+						-- if all dependencies are the same, then return out
+						if sameValues then
+							print(
+								'Dependencies are the same for request "'
+									.. tostring(request)
+									.. '", aborting dispatch...'
+							)
+							return false, "Aborted due to unchanged dependancy array"
+						end
+					end
+				end
+
+				return true
+			end)
 
 			channels[sharedChannelFolder.Name] = channel
 		end

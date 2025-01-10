@@ -11,6 +11,8 @@ local Enums = require(Shared.Enums.index)
 local NetworkEnums = Enums.Network
 
 local INVALID_HEADERS_ERROR: string = "Failed to dispatch remote due to missing or invalid '%s' header"
+local BAD_REQUEST_ERROR: string = 'Received bad request "%s" from player: %s'
+local REQUEST_MISSING_HEADER_ERROR: string = 'Request "%s" is missing header "%s"'
 
 local TABLE = require(Shared.Types.Table)
 local NETWORK = require(Shared.Types.Network)
@@ -29,7 +31,7 @@ local function handleRequest(
 		local requestData: NETWORK.Request = requests[request.name]
 
 		if not requestData then
-			error('Received a bad request "' .. request.name .. '" from player: "' .. fromPlayer.Name)
+			error(BAD_REQUEST_ERROR:format(request.name, fromPlayer.Name), 2)
 		else
 			print('Received request "' .. request.name .. '" from player: ' .. fromPlayer.Name)
 		end
@@ -43,21 +45,23 @@ end
 
 function Network:dispatch(headers: NETWORK.Headers, payload: NETWORK.Payload): (boolean, ValidationStatus.Array)
 	local dependencies: TABLE.AnyArray? = headers.dependencies
+	headers.dependencies = nil
+
 	local protocol: Enums.Enums = headers.protocol
 	local channel: Enums.Enums = headers.channel
 	local request: Enums.Enums = headers.request
 
 	-- Validate required headers
+	if not request then
+		error(INVALID_HEADERS_ERROR:format("request"), 2)
+	end
+
 	if not protocol then
-		error(INVALID_HEADERS_ERROR:format("protocol"))
+		error(REQUEST_MISSING_HEADER_ERROR:format(request.name, "protocol"), 2)
 	end
 
 	if not channel then
-		error(INVALID_HEADERS_ERROR:format("channel"))
-	end
-
-	if not request then
-		error(INVALID_HEADERS_ERROR:format("request"))
+		error(REQUEST_MISSING_HEADER_ERROR:format(request.name, "channel"), 2)
 	end
 
 	-- Retrieve the network location to fire from
@@ -66,21 +70,60 @@ function Network:dispatch(headers: NETWORK.Headers, payload: NETWORK.Payload): (
 	local requestData: NETWORK.Request = channelData.requests[request.name]
 
 	-- Validate the remote dispatch
-	local channelSuccess: boolean, channelValidationReport: ValidationStatus.Array = channelData.state:validate()
+	local success: boolean, validationReport: ValidationStatus.Array = channelData.state:validate({
+		request = request,
+		lastSent = channelData.lastSent,
+	})
 
 	-- Check remote channel validator
-	if not channelSuccess then
-		return channelSuccess, channelValidationReport
+	if not success then
+		return success, validationReport
 	else
 		-- Check remote request validator
-		local requestSuccess: boolean, requestValidationReport: ValidationStatus.Array = requestData.state:validate()
+		success, validationReport = requestData.state:validate()
 
-		if not requestSuccess then
-			return requestSuccess, requestValidationReport
+		if not success then
+			return success, validationReport
 		end
 	end
 
 	-- Remote dispatch state is valid beyond this point --
+
+	-- Update last dependency list
+	if channelData.lastSent then
+		channelData.lastSent.headers = headers
+		channelData.lastSent.payload = payload
+
+		requestData.lastSent.headers = headers
+		requestData.lastSent.payload = payload
+	else
+		local lastSent: NETWORK.LastRequest = {
+			headers = headers,
+			payload = nil,
+		}
+
+		channelData.lastSent = lastSent
+	end
+
+	channelData.state:update({
+		dependencies = function(): TABLE.StringArray
+			return dependencies
+		end,
+	})
+
+	-- Dispatch remote
+	if headers.sendAll then
+		channelData.remote:FireAllClients(headers, payload)
+	elseif not headers.toPlayers then
+		error(REQUEST_MISSING_HEADER_ERROR:format(request.name, "toPlayers"), 2)
+	else
+		for _, player: Player in next, headers.toPlayers do
+			channelData.remote[protocolData.connectionInfo.dispatcher](player, headers, payload)
+		end
+	end
+
+	-- Return the dispatch results
+	return success, validationReport
 end
 
 function Network:sendTCP(headers: NETWORK.Headers, payload: NETWORK.Payload): (boolean, ValidationStatus.Array)

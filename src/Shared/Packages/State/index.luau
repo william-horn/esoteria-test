@@ -18,6 +18,7 @@ local TABLE = require(Shared.Types.Table)
 
 local bothAreIndexable = require(Packages.Util.Types.bothAreIndexable)
 local ValidationStatus = require(Packages.Util.Classes.ValidationStatus)
+local exists = require(Packages.Util.Types.exists)
 
 -- State class
 local State = {}
@@ -29,7 +30,7 @@ type self__State = {
 	_internalState: TABLE.Any,
 }
 
-export type StateValidator = (any) -> (boolean, string?)
+export type StateValidator = (TABLE.Any, any) -> (boolean, string?)
 export type StateUpdater = (prev: any) -> any
 export type State = typeof(setmetatable({} :: self__State, State))
 export type Array = { State }
@@ -55,6 +56,10 @@ function State:get(): TABLE.Any
 	return self._internalState
 end
 
+function State:has(key: any): boolean
+	return exists(self._internalState[key])
+end
+
 function State:update(state: any): ()
 	if bothAreIndexable(state, self._internalState) then
 		for key: any, stateUpdater: StateUpdater in next, state do
@@ -65,11 +70,12 @@ function State:update(state: any): ()
 	end
 end
 
-function State:validate(): (boolean, ValidationStatus.Array)
+function State:validate(_scope: TABLE.StringKeys?): (boolean, ValidationStatus.Array)
+	local scope: TABLE.StringKeys = _scope or {}
 	local validationReport: ValidationStatus.Array = {}
 
 	for index: number = 1, #self._validators do
-		local success: boolean, _message: string? = self._validators[index](self._internalState)
+		local success: boolean, _message: string? = self._validators[index](scope, self._internalState)
 		local message: string = if _message then _message else "No description"
 
 		if not success then

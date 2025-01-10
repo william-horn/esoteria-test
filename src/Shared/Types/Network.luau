@@ -15,7 +15,13 @@ export type ConnectionInfo = {
 	[any]: nil,
 }
 
-export type Payload = TABLE.Any
+export type LastRequest = {
+	headers: Headers,
+	payload: Payload,
+	[any]: nil,
+}
+
+export type Payload = any
 export type Headers = {
 	channel: Enums.Enums,
 	request: Enums.Enums,
@@ -27,7 +33,7 @@ export type Headers = {
 
 export type Request = {
 	handler: (headers: Headers, payload: Payload) -> (),
-	lastSent: { headers: Headers, payload: Payload, [any]: nil },
+	lastSent: LastRequest?,
 	state: State.State,
 	validator: State.StateValidator?,
 	settings: TABLE.Any,
@@ -38,7 +44,7 @@ export type Requests = { [string]: Request }
 
 export type Channel = {
 	remote: AnyRemote,
-	lastSent: { headers: Headers, payload: Payload, [any]: nil },
+	lastSent: LastRequest?,
 	settings: TABLE.Any,
 	state: State.State,
 	requests: Requests,
