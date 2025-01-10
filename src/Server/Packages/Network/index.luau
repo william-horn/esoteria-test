@@ -12,14 +12,13 @@ local NetworkEnums = Enums.Network
 
 local INVALID_HEADERS_ERROR: string = "Failed to dispatch remote due to missing or invalid '%s' header"
 
-(Shared.Types.Enum)
 local TABLE = require(Shared.Types.Table)
 local NETWORK = require(Shared.Types.Network)
 local NetworkScanner = require(Packages.Network.Scanner)
 local ValidationStatus = require(Packages.Util.Classes.ValidationStatus)
 -- local State = require(Packages.State.index)
 
-local Network: TABLE.StringKey = {}
+local Network: TABLE.StringKeys = {}
 
 local function handleRequest(
 	requests: NETWORK.Requests
@@ -27,19 +26,16 @@ local function handleRequest(
 	--
 	return function(fromPlayer: Player, headers: NETWORK.Headers, payload: NETWORK.Payload)
 		local request: Enums.Enums = headers.request
-		local requestData: NETWORK.Request = requests[request.Name]
+		local requestData: NETWORK.Request = requests[request.name]
 
 		if not requestData then
-			error('Received a bad request "' .. request.Name .. '" from player: "' .. fromPlayer.Name)
+			error('Received a bad request "' .. request.name .. '" from player: "' .. fromPlayer.Name)
 		else
-			print('Received request "' .. request.Name .. '" from player: ' .. fromPlayer.Name)
+			print('Received request "' .. request.name .. '" from player: ' .. fromPlayer.Name)
 		end
 
-		------------------------------------------------------
-		-- todo: add request state changes and validation here
-		------------------------------------------------------
-
-		------------------------------------------------------
+		-- Add final headers before calling the server-side remote handlers
+		headers.fromPlayer = fromPlayer
 
 		requestData.handler(headers, payload)
 	end
@@ -65,18 +61,26 @@ function Network:dispatch(headers: NETWORK.Headers, payload: NETWORK.Payload): (
 	end
 
 	-- Retrieve the network location to fire from
-	local protocolData: NETWORK.Protocol = self._tree[protocol.Name]
-	local channelData: NETWORK.Channel = protocolData.channels[channel.Name]
-	local requestData: NETWORK.Request = channelData.requests[request.Name]
+	local protocolData: NETWORK.Protocol = self._tree[protocol.name]
+	local channelData: NETWORK.Channel = protocolData.channels[channel.name]
+	local requestData: NETWORK.Request = channelData.requests[request.name]
 
-	if not requestData then
-		error('Invalid request ("' .. request.Name .. '" is not a valid request for channel "' .. channel.Name .. '"')
+	-- Validate the remote dispatch
+	local channelSuccess: boolean, channelValidationReport: ValidationStatus.Array = channelData.state:validate()
+
+	-- Check remote channel validator
+	if not channelSuccess then
+		return channelSuccess, channelValidationReport
+	else
+		-- Check remote request validator
+		local requestSuccess: boolean, requestValidationReport: ValidationStatus.Array = requestData.state:validate()
+
+		if not requestSuccess then
+			return requestSuccess, requestValidationReport
+		end
 	end
 
-	-- Validate the remote dispatch locally
-	local success: boolean, validationReport: ValidationStatus.Array = channelData.state:validate()
-
-	return success, validationReport
+	-- Remote dispatch state is valid beyond this point --
 end
 
 function Network:sendTCP(headers: NETWORK.Headers, payload: NETWORK.Payload): (boolean, ValidationStatus.Array)
@@ -111,19 +115,19 @@ function Network:init(): ()
 		end
 
 		print("Preparing [" .. protocolName .. "] listeners...")
-		local remoteInfo: NETWORK.RemoteInfo = protocolData.remoteInfo
+		local connectionInfo: NETWORK.ConnectionInfo = protocolData.connectionInfo
 
 		for channelName: string, channelData: NETWORK.Channel in next, protocolData.channels do
 			-- If there are no request handlers for this channel, then don't create any listeners
-			if not next(channelData.requestHandlers) then
+			if not next(channelData.requests) then
 				continue
 			end
 
 			-- Ignore these type errors. `remoteInfo.listener` is a valid key of `channelData.remote`
-			if remoteInfo.connectionType == Enums.SignalConnection.Event then
-				channelData.remote[remoteInfo.listener]:Connect(handleRequest(channelData.requestHandlers))
-			elseif remoteInfo.connectionType == Enums.SignalConnection.Callback then
-				channelData.remote[remoteInfo.listener] = handleRequest(channelData.requestHandlers)
+			if connectionInfo.type == Enums.SignalConnection.Event then
+				channelData.remote[connectionInfo.connector]:Connect(handleRequest(channelData.requests))
+			elseif connectionInfo.connectionType == Enums.SignalConnection.Callback then
+				channelData.remote[connectionInfo.connector] = handleRequest(channelData.requests)
 			end
 
 			print('Created listeners for channel "' .. channelName .. '"')

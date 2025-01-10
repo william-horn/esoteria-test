@@ -59,7 +59,7 @@ export type Tree = {
 	TCPEvent: Protocol,
 	TCPRequest: Protocol,
 	UDPEvent: Protocol,
-	[any]: nil,
+	-- [string]: Protocol,
 }
 
 export type Both = {

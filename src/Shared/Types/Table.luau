@@ -12,8 +12,10 @@ export type InstanceArray = { Instance }
 export type Array2D = { AnyArray }
 export type ObjectArray = { AnyTable }
 
-export type StringKey = { [string]: any }
-export type InstanceKey = { [Instance]: any }
+export type StringKeys = { [string]: any }
+export type InstanceKeys = { [Instance]: any }
+
+export type StringKeysFunctionValues = { [string]: (...any) -> ...any }
 
 export type Class = {
 	__index: AnyTable,

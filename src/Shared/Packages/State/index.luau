@@ -34,6 +34,7 @@ export type StateUpdater = (prev: any) -> any
 export type State = typeof(setmetatable({} :: self__State, State))
 export type Array = { State }
 
+-- todo: Update later to return a new object with class constructors/utility
 function State.new(initialState: any): State
 	local self = setmetatable({} :: self__State, State)
 	self._validators = {}
