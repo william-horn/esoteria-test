@@ -9,6 +9,7 @@ local TABLE = require(Shared.Types.Table)
 
 -- Enums
 local Enums = require(Shared.Enums.index)
+local NetworkEnums = Enums.Network
 local EnumCategory = require(Shared.Enums.EnumCategory)
 local EnumItem = require(Shared.Enums.EnumItem)
 
@@ -19,7 +20,7 @@ while true do
 		channel = Enums.Network.Channel.Channel,
 		request = Enums.Network.Request.Generic,
 		sendAll = true,
-		dependencies = { os.clock() },
+		-- dependencies = { os.clock() },
 	}, {
 		data = "test data",
 	})
@@ -27,8 +28,9 @@ while true do
 	local f = os.clock() - t
 
 	print("time: ", f)
+	print("Channel Data: ", Network:getTCPEventChannel(NetworkEnums.Channel.Channel))
 
-	task.wait()
+	task.wait(0.5)
 end
 
 return nil

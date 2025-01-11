@@ -1,4 +1,4 @@
 return function()
-	print("Custom request validator")
+	-- print("Custom request validator")
 	return true
 end

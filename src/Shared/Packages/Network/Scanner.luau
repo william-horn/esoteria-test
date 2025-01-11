@@ -54,8 +54,10 @@ local function compileRequestsTable(requestsFolder: Folder): NETWORK.Requests
 		local settingsModule: Instance? = requestFolder:FindFirstChild("Settings")
 		local stateModule: Instance? = requestFolder:FindFirstChild("State")
 		local validatorModule: Instance? = requestFolder:FindFirstChild("Validator")
+		local onDispatchModule: Instance? = requestFolder:FindFirstChild("OnDispatch")
 
 		requestData.handler = requireModuleIfExists(handlerModule, nil)
+		requestData.onDispatch = requireModuleIfExists(onDispatchModule, nil)
 		requestData.settingsModule = requireModuleIfExists(settingsModule, {})
 		requestData.state = State.new(requireModuleIfExists(stateModule, {}))
 
@@ -76,7 +78,7 @@ local function findFolderFrom(origin: Instance, enum: Enums.Enums, name: string)
 		warn(MISSING_FOLDER_WARNING:format(name))
 		return nil
 	elseif not isFolder(folder) then
-		warn(INVALID_CLASSNAME_ERROR:format(folder.Name, "Folder", folder.ClassName))
+		error(INVALID_CLASSNAME_ERROR:format(folder.Name, "Folder", folder.ClassName), 2)
 		return nil
 	elseif not Enums.is(enum[name]) then
 		error(INVALID_ENUM_ERROR:format(name), 2)
@@ -110,10 +112,6 @@ function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
 			-- channel.lastSent = { headers = {}, payload = nil }
 
 			local remote: Instance? = sharedChannelFolder:FindFirstChild("Remote")
-			local settingsModule: Instance? = localChannelFolder:FindFirstChild("Settings")
-			local stateModule: Instance? = localChannelFolder:FindFirstChild("State")
-			local validatorModule: Instance? = localChannelFolder:FindFirstChild("Validator")
-			local requestsFolder: Instance? = localChannelFolder:FindFirstChild("Requests")
 
 			-- Find the Remote instance for the channel
 			if not (remote and isRemote(remote)) then
@@ -122,8 +120,17 @@ function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
 				channel.remote = remote
 			end
 
+			local settingsModule: Instance? = localChannelFolder:FindFirstChild("Settings")
+			local stateModule: Instance? = localChannelFolder:FindFirstChild("State")
+			local validatorModule: Instance? = localChannelFolder:FindFirstChild("Validator")
+			local requestsFolder: Instance? = localChannelFolder:FindFirstChild("Requests")
+			local onDispatchModule: Instance? = localChannelFolder:FindFirstChild("OnDispatch")
+
 			-- Get the settings for the channel
 			channel.settings = requireModuleIfExists(settingsModule, {})
+
+			-- Get OnDispatch callback if one exists
+			channel.onDispatch = requireModuleIfExists(onDispatchModule, nil)
 
 			-- Get the state for the channel
 			channel.state = State.new(requireModuleIfExists(stateModule, {}))
@@ -150,9 +157,7 @@ function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
 
 				if not dependencies then
 					return true
-				end
-
-				if lastDependancies and #lastDependancies == #dependencies then
+				elseif lastDependancies and #lastDependancies == #dependencies then
 					local sameValues: boolean = true
 					-- print("both dependency tables exist and are same size")
 
@@ -171,7 +176,7 @@ function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
 						-- 		.. tostring(request.name)
 						-- 		.. '", aborting dispatch...'
 						-- )
-						return false, "Aborted due to unchanged dependancy array"
+						return false, "Aborted dispatch due to unchanged dependancy array"
 					end
 				end
 

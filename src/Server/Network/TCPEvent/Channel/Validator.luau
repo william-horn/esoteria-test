@@ -1,4 +1,4 @@
 return function(state: any)
-	print("Custom channel validator")
+	-- print("Custom channel validator")
 	return true
 end

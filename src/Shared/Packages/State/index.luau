@@ -36,7 +36,7 @@ export type State = typeof(setmetatable({} :: self__State, State))
 export type Array = { State }
 
 -- todo: Update later to return a new object with class constructors/utility
-function State.new(initialState: any): State
+local function new(initialState: any): State
 	local self = setmetatable({} :: self__State, State)
 	self._validators = {}
 	self._internalState = initialState or nil
@@ -52,8 +52,8 @@ function State:set(state: any): ()
 	self._internalState = state
 end
 
-function State:get(): TABLE.Any
-	return self._internalState
+function State:get(key: string?): TABLE.Any
+	return if key then self._internalState[key] else self._internalState
 end
 
 function State:has(key: any): boolean
@@ -88,4 +88,6 @@ function State:validate(_scope: TABLE.StringKeys?): (boolean, ValidationStatus.A
 	return #validationReport == 0, validationReport
 end
 
-return State
+return {
+	new = new,
+}

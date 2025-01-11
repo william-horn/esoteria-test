@@ -26,7 +26,7 @@ local function handleRequest(
 	requests: NETWORK.Requests
 ): (fromPlayer: Player, headers: NETWORK.Headers, payload: NETWORK.Payload) -> ()
 	--
-	return function(fromPlayer: Player, headers: NETWORK.Headers, payload: NETWORK.Payload)
+	return function(fromPlayer: Player, headers: NETWORK.Headers, payload: NETWORK.Payload): ()
 		local request: Enums.Enums = headers.request
 		local requestData: NETWORK.Request = requests[request.name]
 
@@ -41,6 +41,18 @@ local function handleRequest(
 
 		requestData.handler(headers, payload)
 	end
+end
+
+function Network:getTCPEventChannel(channel: Enums.Enums): NETWORK.Channel
+	return self._tree.TCPEvent.channels[channel.name]
+end
+
+function Network:getTCPRequestChannel(channel: Enums.Enums): NETWORK.Channel
+	return self._tree.TCPRequest.channels[channel.name]
+end
+
+function Network:getUDPEventChannel(channel: Enums.Enums): NETWORK.Channel
+	return self._tree.UDPEvent.channels[channel.name]
 end
 
 function Network:dispatch(headers: NETWORK.Headers, payload: NETWORK.Payload): (boolean, ValidationStatus.Array)
@@ -74,17 +86,37 @@ function Network:dispatch(headers: NETWORK.Headers, payload: NETWORK.Payload): (
 		dependencies = dependencies,
 	})
 
+	local function invokeOnDispatch(
+		success: boolean,
+		validationReport: ValidationStatus.Array,
+		headers: NETWORK.Headers,
+		payload: NETWORK.Payload
+	): ()
+		if channelData.onDispatch then
+			channelData.onDispatch(channelData, success, validationReport, headers, payload)
+		end
+
+		if requestData.onDispatch then
+			requestData.onDispatch(requestData, success, validationReport, headers, payload)
+		end
+	end
+
 	-- Check remote channel validator
 	if not success then
+		invokeOnDispatch(success, validationReport, headers, payload)
 		return success, validationReport
 	else
 		-- Check remote request validator
 		success, validationReport = requestData.state:validate()
 
 		if not success then
+			invokeOnDispatch(success, validationReport, headers, payload)
 			return success, validationReport
 		end
 	end
+
+	-- Run OnDispatch callbacks
+	invokeOnDispatch(success, validationReport, headers, payload)
 
 	-- Remote dispatch state is valid beyond this point --
 
@@ -93,6 +125,8 @@ function Network:dispatch(headers: NETWORK.Headers, payload: NETWORK.Payload): (
 		channelData.lastSent.headers = headers
 		channelData.lastSent.payload = payload
 
+		-- Ignore type error here.
+		-- `requestData.lastSent` exists when `channelData.lastSend` exists
 		requestData.lastSent.headers = headers
 		requestData.lastSent.payload = payload
 	else
@@ -106,7 +140,7 @@ function Network:dispatch(headers: NETWORK.Headers, payload: NETWORK.Payload): (
 	end
 
 	channelData.state:update({
-		dependencies = function(): TABLE.AnyArray?
+		dependencies = function()
 			return dependencies
 		end,
 	})
