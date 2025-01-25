@@ -8,26 +8,28 @@ local Shared = game:GetService("ReplicatedStorage").Shared
 local Server = game:GetService("ServerScriptService").Server
 local Packages = Shared.Packages
 local Enums = require(Shared.Enums.index)
-local NetworkEnums = Enums.Network
+local NetworkEnums: Enums.Enums = Enums.Network
+local SignalConnection: Enums.Enums = Enums.SignalConnection
+-- local SignalDomain: Enums.Enums = Enums.SignalDomain
+-- local SignalType: Enums.Enums = Enums.SignalType
 
+local INVALID_DISPATCH_ARGS: string = 'Failed to dispatch remote due to missing "headers" or "payload" fields'
 local INVALID_HEADERS_ERROR: string = "Failed to dispatch remote due to missing or invalid '%s' header"
 local BAD_REQUEST_ERROR: string = 'Received bad request "%s" from player: %s'
 local REQUEST_MISSING_HEADER_ERROR: string = 'Request "%s" is missing header "%s"'
 
 local TABLE = require(Shared.Types.Table)
 local NETWORK = require(Shared.Types.Network)
+
 local NetworkScanner = require(Packages.Network.Scanner)
 local ValidationStatus = require(Packages.Util.Classes.ValidationStatus)
 -- local State = require(Packages.State.index)
 
 local Network = {}
 
-local function handleRequest(
-	requests: NETWORK.Requests
-): (fromPlayer: Player, headers: NETWORK.Headers, payload: NETWORK.Payload) -> ()
-	--
-	return function(fromPlayer: Player, headers: NETWORK.Headers, payload: NETWORK.Payload): ()
-		local request: Enums.Enums = headers.request
+local function handleRequest(requests: NETWORK.Requests): (fromPlayer: Player, packet: NETWORK.Packet) -> ()
+	return function(fromPlayer: Player, packet: NETWORK.Packet): ()
+		local request: Enums.Enums = packet.headers.request
 		local requestData: NETWORK.Request = requests[request.name]
 
 		if not requestData then
@@ -37,9 +39,8 @@ local function handleRequest(
 		end
 
 		-- Add final headers before calling the server-side remote handlers
-		headers.fromPlayer = fromPlayer
-
-		requestData.handler(headers, payload)
+		packet.headers.fromPlayer = fromPlayer
+		requestData.handler(packet)
 	end
 end
 
@@ -55,13 +56,24 @@ function Network:getUDPEventChannel(channel: Enums.Enums): NETWORK.Channel
 	return self._tree.UDPEvent.channels[channel.name]
 end
 
-function Network:dispatch(headers: NETWORK.Headers, payload: NETWORK.Payload): (boolean, ValidationStatus.Array)
+function Network:dispatch(packet: NETWORK.Packet): NETWORK.Response
+	local headers: NETWORK.Headers = packet.headers
+	local payload: NETWORK.Payload = packet.payload
+
+	if not headers or payload then
+		error(INVALID_DISPATCH_ARGS, 2)
+	end
+
+	--! do timestamps here --
+
 	local dependencies: TABLE.AnyArray? = headers.dependencies
 	headers.dependencies = nil
 
 	local protocol: Enums.Enums = headers.protocol
 	local channel: Enums.Enums = headers.channel
 	local request: Enums.Enums = headers.request
+
+	local response = {} :: NETWORK.Response
 
 	-- Validate required headers
 	if not request then
@@ -80,99 +92,95 @@ function Network:dispatch(headers: NETWORK.Headers, payload: NETWORK.Payload): (
 	local protocolData: NETWORK.Protocol = self._tree[protocol.name]
 	local channelData: NETWORK.Channel = protocolData.channels[channel.name]
 	local requestData: NETWORK.Request = channelData.requests[request.name]
+	local connectionInfo = protocolData.connectionInfo
+
+	headers.originTime = DateTime.now()
 
 	-- Validate the remote dispatch
-	local success: boolean, validationReport: ValidationStatus.Array = channelData.state:validate({
+	local success: boolean, validationReport: ValidationStatus.Array? = channelData.state:validate({
 		dependencies = dependencies,
+		headers = headers,
+		request = request,
 	})
 
-	local function invokeOnDispatch(
-		success: boolean,
-		validationReport: ValidationStatus.Array,
-		headers: NETWORK.Headers,
-		payload: NETWORK.Payload
-	): ()
+	local function invokeOnDispatch(success: boolean, validationReport: ValidationStatus.Array?): ()
 		if channelData.onDispatch then
-			channelData.onDispatch(channelData, success, validationReport, headers, payload)
+			channelData.onDispatch(channelData, success, validationReport, packet)
 		end
 
 		if requestData.onDispatch then
-			requestData.onDispatch(requestData, success, validationReport, headers, payload)
+			requestData.onDispatch(requestData, success, validationReport, packet)
 		end
 	end
 
 	-- Check remote channel validator
 	if not success then
-		invokeOnDispatch(success, validationReport, headers, payload)
-		return success, validationReport
+		response.success = success
+		response.validationReport = validationReport
+
+		invokeOnDispatch(success, validationReport)
+		return response
 	else
 		-- Check remote request validator
 		success, validationReport = requestData.state:validate()
 
 		if not success then
-			invokeOnDispatch(success, validationReport, headers, payload)
-			return success, validationReport
+			response.success = success
+			response.validationReport = validationReport
+
+			invokeOnDispatch(success, validationReport)
+			return response
 		end
 	end
 
 	-- Run OnDispatch callbacks
-	invokeOnDispatch(success, validationReport, headers, payload)
+	response.success = success
+	response.validationReport = validationReport
+
+	invokeOnDispatch(success, validationReport)
 
 	-- Remote dispatch state is valid beyond this point --
+	channelData.lastSentPacket = packet
+	requestData.lastSentPacket = packet
 
 	-- Update last dependency list
-	if channelData.lastSent then
-		channelData.lastSent.headers = headers
-		channelData.lastSent.payload = payload
-
-		-- Ignore type error here.
-		-- `requestData.lastSent` exists when `channelData.lastSend` exists
-		requestData.lastSent.headers = headers
-		requestData.lastSent.payload = payload
-	else
-		local lastSent: NETWORK.LastRequest = {
-			headers = headers,
-			payload = nil,
-		}
-
-		channelData.lastSent = lastSent
-		requestData.lastSent = lastSent
-	end
-
 	channelData.state:update({
 		dependencies = function()
 			return dependencies
 		end,
 	})
 
-	-- Dispatch remote
-	if headers.sendAll then
-		channelData.remote:FireAllClients(headers, payload)
-	elseif not headers.toPlayers then
-		error(REQUEST_MISSING_HEADER_ERROR:format(request.name, "toPlayers"), 2)
-	else
+	-- Dispatch signal --
+
+	-- If the signal is a Remote and an Event
+	if connectionInfo.signalConnection == SignalConnection.Event then
+		if headers.sendAll then
+			channelData.remote:FireAllClients(packet)
+			return response
+		end
+
 		for _, player: Player in next, headers.toPlayers do
-			channelData.remote[protocolData.connectionInfo.dispatcher](player, headers, payload)
+			channelData.remote[protocolData.connectionInfo.dispatcher](player, packet)
 		end
 	end
 
 	-- Return the dispatch results
-	return success, validationReport
+	return response
 end
 
-function Network:sendTCP(headers: NETWORK.Headers, payload: NETWORK.Payload): (boolean, ValidationStatus.Array)
-	headers.protocol = NetworkEnums.Protocol.TCPEvent
-	return self:dispatch(headers, payload)
+function Network:sendTCP(packet: NETWORK.Packet): NETWORK.Response
+	packet.headers.protocol = NetworkEnums.Protocol.TCPEvent
+	return self:dispatch(packet)
 end
 
-function Network:requestTCP(headers: NETWORK.Headers, payload: NETWORK.Payload): (boolean, ValidationStatus.Array)
-	headers.protocol = NetworkEnums.Protocol.TCPRequest
-	return self:dispatch(headers, payload)
+function Network:requestTCP(packet: NETWORK.Packet): NETWORK.Response
+	packet.headers.protocol = NetworkEnums.Protocol.TCPRequest
+	return self:dispatch(packet)
 end
 
-function Network:sendUDP(headers: NETWORK.Headers, payload: NETWORK.Payload): (boolean, ValidationStatus.Array)
-	headers.protocol = NetworkEnums.Protocol.UDPEvent
-	return self:dispatch(headers, payload)
+function Network:sendUDP(packet: NETWORK.Packet): NETWORK.Response
+	packet.headers.protocol = NetworkEnums.Protocol.UDPEvent
+	return self:dispatch(packet)
 end
 
 function Network:init(): any
@@ -201,7 +209,7 @@ function Network:init(): any
 			end
 
 			-- Ignore these type errors. `remoteInfo.listener` is a valid key of `channelData.remote`
-			if connectionInfo.type == Enums.SignalConnection.Event then
+			if connectionInfo.signalConnection == Enums.SignalConnection.Event then
 				channelData.remote[connectionInfo.connector]:Connect(handleRequest(channelData.requests))
 			elseif connectionInfo.connectionType == Enums.SignalConnection.Callback then
 				channelData.remote[connectionInfo.connector] = handleRequest(channelData.requests)

@@ -12,7 +12,7 @@ local function new(t, _keyType: string?, _tableName: string?): any
 	local mt = {} :: TABLE.StringKeysFunctionValues
 
 	mt.__index = function(_, k: string): ()
-		-- if k == "lastSent" then
+		-- if k == "lastSentPacket" then
 		-- 	return nil
 		-- end
 		error(INDEX_ERROR:format(k, keyType, tableName), 2)

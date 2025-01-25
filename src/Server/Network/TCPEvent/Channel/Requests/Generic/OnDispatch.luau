@@ -7,18 +7,17 @@ local NETWORK = require(Shared.Types.Network)
 local ValidationStatus = require(Packages.Util.Classes.ValidationStatus)
 
 return function(
-	requestData: NETWORK.Request,
+	request: NETWORK.Request,
 	success: boolean,
-	validationReport: ValidationStatus.Array,
-	headers: NETWORK.Headers,
-	payload: NETWORK.Payload
+	validationReport: ValidationStatus.Array?,
+	packet: NETWORK.Packet
 ): ()
 	if not success then
 		-- print(" REQUEST Dispatch failed")
 		return
 	end
 
-	requestData.state:update({
+	request.state:update({
 		timesFired = function(prev: number)
 			return prev + 1
 		end,

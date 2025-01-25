@@ -35,7 +35,6 @@ export type StateUpdater = (prev: any) -> any
 export type State = typeof(setmetatable({} :: self__State, State))
 export type Array = { State }
 
--- todo: Update later to return a new object with class constructors/utility
 local function new(initialState: any): State
 	local self = setmetatable({} :: self__State, State)
 	self._validators = {}
@@ -70,7 +69,7 @@ function State:update(state: any): ()
 	end
 end
 
-function State:validate(_scope: TABLE.StringKeys?): (boolean, ValidationStatus.Array)
+function State:validate(_scope: TABLE.StringKeys?): (boolean, ValidationStatus.Array?)
 	local scope: TABLE.StringKeys = _scope or {}
 	local validationReport: ValidationStatus.Array = {}
 
@@ -82,10 +81,12 @@ function State:validate(_scope: TABLE.StringKeys?): (boolean, ValidationStatus.A
 			local validationLog: ValidationStatus.ValidationStatus =
 				ValidationStatus.new(Enums.Validation.Rejected, message)
 			validationReport[#validationReport + 1] = validationLog
+
+			return #validationReport == 0, validationReport
+		else
+			return true
 		end
 	end
-
-	return #validationReport == 0, validationReport
 end
 
 return {

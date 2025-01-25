@@ -90,6 +90,15 @@ do
 end
 
 do
+	local SignalDomain = EnumCategory.new("SignalDomain")
+	SignalDomain.Global = EnumItem.new("Global") -- Remotes
+	SignalDomain.Local = EnumItem.new("Local") -- Bindables
+	SignalDomain.None = EnumItem.new("None")
+
+	Enums.SignalDomain = SignalDomain
+end
+
+do
 	local Validation = EnumCategory.new("Validation")
 	Validation.Any = EnumItem.new("Rejected")
 	Validation.Client = EnumItem.new("Successful")

@@ -12,23 +12,31 @@ export type AnyRemote = RemoteEvent | RemoteFunction | UnreliableRemoteEvent | B
 export type ConnectionInfo = {
 	connector: string,
 	dispatcher: string,
-	type: Enums.Enums,
-	[any]: nil,
-}
-
-export type LastRequest = {
-	headers: Headers,
-	payload: Payload,
+	signalConnection: Enums.Enums,
+	signalDomain: Enums.Enums,
+	signalType: Enums.Enums,
 	[any]: nil,
 }
 
 export type OnDispatch = (
-	channelOrRequest: Channel | Request,
+	type: Channel | Request,
 	success: boolean,
-	validationStatus: ValidationStatus.Array,
-	headers: Headers,
-	payload: Payload
+	validationStatus: ValidationStatus.Array?,
+	packet: Packet
 ) -> ()
+
+export type Response = {
+	headers: Headers?,
+	payload: Payload?,
+	success: boolean,
+	validationReport: ValidationStatus.Array?,
+}
+
+export type Packet = {
+	headers: Headers,
+	payload: Payload,
+	[any]: nil,
+}
 
 export type Payload = any
 
@@ -42,8 +50,8 @@ export type Headers = {
 }
 
 export type Request = {
-	handler: (headers: Headers, payload: Payload) -> (),
-	lastSent: LastRequest?,
+	handler: (packet: Packet) -> (),
+	lastSentPacket: Packet?,
 	onDispatch: OnDispatch?,
 	state: State.State,
 	validator: State.StateValidator?,
@@ -56,7 +64,7 @@ export type Requests = { [string]: Request }
 export type Channel = {
 	remote: AnyRemote,
 	onDispatch: OnDispatch?,
-	lastSent: LastRequest?,
+	lastSentPacket: Packet?,
 	settings: TABLE.Any,
 	state: State.State,
 	requests: Requests,

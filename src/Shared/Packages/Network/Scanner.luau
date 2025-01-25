@@ -11,8 +11,11 @@ local MISSING_FOLDER_WARNING: string = 'Could not find local folder "%s"'
 
 local MISSING_REMOTE_ERROR: string = 'Missing Remote for channel "%s"'
 
-local INVALID_CLASSNAME_ERROR = 'Invalid object class for "%s" (expected "%s", got "%s")'
-local INVALID_ENUM_ERROR = '"%s" is not a valid enum'
+local INVALID_CLASSNAME_ERROR: string = 'Invalid object class for "%s" (expected "%s", got "%s")'
+local INVALID_ENUM_ERROR: string = '"%s" is not a valid enum'
+
+local MUTUALLY_EXLUSIVE_HEADERS_ERROR: string = 'Cannot pass mutually exlusive headers "%s" and "%s"'
+local REQUEST_MISSING_HEADER_ERROR: string = 'Request "%s" is missing header "%s"'
 
 local NETWORK = require(Shared.Types.Network)
 local TABLE = require(Shared.Types.Table)
@@ -48,7 +51,7 @@ local function compileRequestsTable(requestsFolder: Folder): NETWORK.Requests
 		end
 
 		local requestData = TableWithIndexError.new({}, "Field", "RequestData") :: NETWORK.Request
-		-- requestData.lastSent = { headers = {}, payload = nil }
+		-- requestData.lastSentPacket = { headers = {}, payload = nil }
 
 		local handlerModule: Instance? = requestFolder:FindFirstChild("Handler")
 		local settingsModule: Instance? = requestFolder:FindFirstChild("Settings")
@@ -109,7 +112,7 @@ function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
 			end
 
 			local channel = {} :: NETWORK.Channel
-			-- channel.lastSent = { headers = {}, payload = nil }
+			-- channel.lastSentPacket = { headers = {}, payload = nil }
 
 			local remote: Instance? = sharedChannelFolder:FindFirstChild("Remote")
 
@@ -152,9 +155,18 @@ function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
 			channel.state:addValidator(function(scope: TABLE.StringKeys, state: any)
 				-- Dependancy check
 				local dependencies: TABLE.AnyArray? = scope.dependencies
-				-- local request: Enums.Enums = scope.request
+				local request: Enums.Enums = scope.request
 				local lastDependancies: TABLE.AnyArray? = state.dependencies
+				local headers: NETWORK.Headers = scope.headers
 
+				-- Validate headers
+				if headers.sendAll and headers.toPlayers then
+					return false, MUTUALLY_EXLUSIVE_HEADERS_ERROR:format("sendAll", "toPlayers")
+				elseif not headers.sendAll and not headers.toPlayers then
+					return false, REQUEST_MISSING_HEADER_ERROR:format(request.name, "toPlayers")
+				end
+
+				-- Validate dependancy array
 				if not dependencies then
 					return true
 				elseif lastDependancies and #lastDependancies == #dependencies then
