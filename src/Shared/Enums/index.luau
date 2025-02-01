@@ -13,17 +13,10 @@
 
 local Shared = game:GetService("ReplicatedStorage").Shared
 
--- local TABLE = require(Shared.Types.Table)
-
 local EnumItem = require(Shared.Enums.EnumItem)
 local EnumCategory = require(Shared.Enums.EnumCategory)
 
-local Enums = {} :: {
-	serialize: (Enums) -> string,
-	deserialize: (string) -> Enums,
-	is: (any) -> boolean,
-	[string]: Enums,
-}
+local Enums = {}
 
 export type Enums = EnumItem.EnumItem | EnumCategory.EnumCategory
 

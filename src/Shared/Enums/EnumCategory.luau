@@ -1,8 +1,8 @@
 --!strict
 
 --[[
-	@author: William J. Horn
-	@written: 1/6/2025
+	@author William J. Horn
+	@written 1/6/2025
 
 	A custom enum category class with serialize/deserialize capabilities. Stores EnumItem
 	instances and provides an API for collecting all EnumItems
@@ -11,8 +11,6 @@
 local Shared = game:GetService("ReplicatedStorage").Shared
 
 local EnumItem = require(Shared.Enums.EnumItem)
-
--- local TABLE = require(Shared.Types.Table)
 
 local isTable = require(Shared.Packages.Util.Types.isTable)
 local getValues = require(Shared.Packages.Table.Dictionary.values)
@@ -24,7 +22,7 @@ EnumCategory.__index = EnumCategory
 EnumCategory._categoryCount = 0
 EnumCategory._idMap = {} :: Map
 
-type self__EnumCategory = {
+type EnumCategoryFields = {
 	value: number,
 	name: string,
 	_items: EnumItem.Map,
@@ -33,11 +31,11 @@ type self__EnumCategory = {
 	-- ! bug
 	-- ROBLOX does not show intellisense for tables that have this type definition
 	-- Fix later
-	[string]: EnumCategory | EnumItem.EnumItem,
+	-- [string]: EnumCategory | EnumItem.EnumItem,
 	-- [string]: EnumCategory,
 }
 
-export type EnumCategory = typeof(setmetatable({} :: self__EnumCategory, EnumCategory))
+export type EnumCategory = typeof(setmetatable({} :: EnumCategoryFields, EnumCategory))
 export type Array = { EnumCategory }
 export type Map = { [any]: EnumCategory }
 
@@ -47,9 +45,9 @@ end
 
 local function new(name: string, _enumItems: EnumItem.Map?): EnumCategory
 	local enumItems: EnumItem.Map = _enumItems or {}
-	local categoryId: string = getId("EnumCategory", name, EnumCategory._categoryCount)
+	local categoryId = getId("EnumCategory", name, EnumCategory._categoryCount)
 
-	local self = setmetatable({} :: self__EnumCategory, EnumCategory)
+	local self = setmetatable({} :: EnumCategoryFields, EnumCategory)
 	self.value = EnumCategory._categoryCount
 	self.name = name
 	self._items = enumItems

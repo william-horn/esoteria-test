@@ -1,15 +1,13 @@
 --!strict
 
 --[[
-	@author: William J. Horn
-	@written: 1/6/2025
+	@author William J. Horn
+	@written 1/6/2025
 
 	A custom enum item class with serialize/deserialize capabilities
 ]]
 
 local Shared = game:GetService("ReplicatedStorage").Shared
-
--- local TABLE = require(Shared.Types.Table)
 
 local isTable = require(Shared.Packages.Util.Types.isTable)
 local getId = require(Shared.Enums.getId)
@@ -17,25 +15,25 @@ local getId = require(Shared.Enums.getId)
 local EnumItem = {}
 EnumItem.__index = EnumItem
 
+-- Static fields
 EnumItem._itemCount = 0
 EnumItem._idMap = {}
 
-type self__EnumItem = {
+type EnumItemFields = {
 	value: number,
 	name: string,
 	_id: string,
-	[any]: nil,
 }
 
-export type EnumItem = typeof(setmetatable({} :: self__EnumItem, EnumItem))
+export type EnumItem = typeof(setmetatable({} :: EnumItemFields, EnumItem))
 export type Array = { EnumItem }
 export type Map = { [any]: EnumItem }
 
 local function new(name: string, _value: number?): EnumItem
-	local value: number = _value or EnumItem._itemCount
-	local itemId: string = getId("EnumItem", name, EnumItem._itemCount)
+	local value = _value or EnumItem._itemCount
+	local itemId = getId("EnumItem", name, EnumItem._itemCount)
 
-	local self = setmetatable({} :: self__EnumItem, EnumItem)
+	local self = setmetatable({} :: EnumItemFields, EnumItem)
 	self.value = value
 	self.name = name
 	self._id = itemId
