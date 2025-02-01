@@ -9,8 +9,8 @@ local TABLE = require(Shared.Types.Table)
 	@args: <table> dict
 	@returns: <array> values
 ]]
-local function values(dict: TABLE.Any): TABLE.AnyArray
-	local arr: TABLE.AnyArray = {}
+local function values(dict: TABLE.Map<any, any>): TABLE.ArrayOf<any>
+	local arr = {}
 
 	for _, v: any in next, dict do
 		arr[#arr + 1] = v

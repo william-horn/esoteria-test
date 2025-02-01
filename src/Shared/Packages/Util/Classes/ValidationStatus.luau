@@ -9,18 +9,18 @@ local ValidationStatus = {}
 ValidationStatus.__index = ValidationStatus
 
 -- ValidationStatus types
-type self__ValidationStatus = {
+type ValidationStatusFields = {
 	status: Enums.Enums,
 	-- reason: Enums.Enums,
 	message: string,
 }
 
-export type ValidationStatus = typeof(setmetatable({} :: self__ValidationStatus, ValidationStatus))
+export type ValidationStatus = typeof(setmetatable({} :: ValidationStatusFields, ValidationStatus))
 export type Array = { ValidationStatus }
 export type Map = { [any]: ValidationStatus }
 
 function ValidationStatus.new(status: Enums.Enums, message: string): ValidationStatus
-	local self: self__ValidationStatus = {
+	local self: ValidationStatusFields = {
 		status = status,
 		-- reason = reason,
 		message = message,

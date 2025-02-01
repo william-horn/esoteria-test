@@ -1,5 +1,6 @@
 --!strict
 
+-- LEGACY TYPES
 type AnyTable = { [any]: any }
 
 export type Any = AnyTable
@@ -21,5 +22,9 @@ export type Class = {
 	__index: AnyTable,
 	[string]: any,
 }
+
+-- MOST CURRENT
+export type Map<Key, Value> = { [Key]: Value }
+export type ArrayOf<T> = { T }
 
 return nil
