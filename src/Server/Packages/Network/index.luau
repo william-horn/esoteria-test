@@ -4,6 +4,11 @@
 	Server-side Network API
 ]]
 
+local INVALID_DISPATCH_ARGS = 'Failed to dispatch remote due to missing "headers" or "payload" fields'
+local INVALID_HEADERS_ERROR = "Failed to dispatch remote due to missing or invalid '%s' header"
+local BAD_REQUEST_ERROR = 'Received bad request "%s" from player: %s'
+local REQUEST_MISSING_HEADER_ERROR = 'Request "%s" is missing header "%s"'
+
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Server = game:GetService("ServerScriptService").Server
 local Packages = Shared.Packages
@@ -12,11 +17,6 @@ local NetworkEnums: Enums.Enums = Enums.Network
 local SignalConnection: Enums.Enums = Enums.SignalConnection
 -- local SignalDomain: Enums.Enums = Enums.SignalDomain
 -- local SignalType: Enums.Enums = Enums.SignalType
-
-local INVALID_DISPATCH_ARGS: string = 'Failed to dispatch remote due to missing "headers" or "payload" fields'
-local INVALID_HEADERS_ERROR: string = "Failed to dispatch remote due to missing or invalid '%s' header"
-local BAD_REQUEST_ERROR: string = 'Received bad request "%s" from player: %s'
-local REQUEST_MISSING_HEADER_ERROR: string = 'Request "%s" is missing header "%s"'
 
 local TABLE = require(Shared.Types.Table)
 local NETWORK = require(Shared.Types.Network)

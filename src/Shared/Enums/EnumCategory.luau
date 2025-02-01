@@ -25,7 +25,7 @@ ensure that the public method type definitions match up with
 the methods that are defined internally. This is why we are
 joining `EnumCategoryPublicMethods` with the general map type
 ]]
-type EnumItemStaticInterface = EnumCategoryPublicMethods & TABLE.Map<string, any>
+type EnumCategoryStaticInterface = EnumCategoryPublicMethods & TABLE.Map<string, any>
 
 --[[
 Public fields (internal & external)
@@ -67,7 +67,7 @@ Create the class and assert that it follows the rules of the
 static interface type, which describes what types the public
 methods should be.
 ]]
-local EnumCategory = {} :: EnumItemStaticInterface
+local EnumCategory = {} :: EnumCategoryStaticInterface
 
 --[[
 Private static fields
@@ -83,7 +83,14 @@ as `any`. Therefore, whenever accessing these fields, a type
 assertion should always be used so that the type system knows
 what they are.
 ]]
-EnumCategory.__index = EnumCategory
+EnumCategory.__index = function(self, key)
+	if self._items[key] then
+		return self._items[key]
+	else
+		return rawget(EnumCategory, key)
+	end
+end
+
 EnumCategory._categoryCount = 0
 EnumCategory._idMap = {}
 
@@ -100,7 +107,7 @@ Public methods
 
 These methods are available only to instances of this class.
 Internally, they will be visible on the static class interface
-of `EnumItemStaticInterface`, but they will not be visible on 
+of `EnumCategoryStaticInterface`, but they will not be visible on 
 such interface after the class is exported.
 ]]
 function EnumCategory:getItems()
@@ -119,8 +126,10 @@ Public Static methods
 These methods are constructor or utility functions available only
 at the class level.
 ]]
-local function new(name: string, _enumItems: TABLE.Map<any, EnumItem.EnumItem>?)
+local function new(name: string, _enumItems: TABLE.Map<string, EnumItem.EnumItem>?)
 	local categoryCount = EnumCategory._categoryCount :: number -- private
+	local enumItems = _enumItems or {}
+
 	local idMap = EnumCategory._idMap :: TABLE.Map<string, EnumCategory> -- private
 	local categoryId = getId("EnumCategory", name, categoryCount)
 
@@ -132,7 +141,7 @@ local function new(name: string, _enumItems: TABLE.Map<any, EnumItem.EnumItem>?)
 	self.name = name
 
 	-- Private
-	self._items = _enumItems or {}
+	self._items = enumItems
 	self._id = categoryId
 
 	idMap[categoryId] = self
@@ -149,7 +158,7 @@ local function serialize(enumCategory: EnumCategory)
 	return id
 end
 
-local function deserialize(serialized: string): EnumCategory
+local function deserialize(serialized: string)
 	local idMap = EnumCategory._idMap :: TABLE.Map<string, EnumCategory> -- private
 	return idMap[serialized]
 end

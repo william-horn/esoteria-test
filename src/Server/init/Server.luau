@@ -91,13 +91,17 @@ local Shared = game:GetService("ReplicatedStorage").Shared
 
 local EnumCategory = require(Shared.Enums.EnumCategory)
 local EnumItem = require(Shared.Enums.EnumItem)
+local Enums = require(Shared.Enums.index)
 
-EnumItem.deserialize(4)
-EnumItem.serialize(4)
+print(Enums.Machine:getItems())
+print(Enums.Machine.Any:getId())
 
-EnumCategory.deserialize(4)
-EnumCategory.serialize(4)
+print(EnumCategory.is(Enums.Machine.Any))
+print(EnumItem.is(Enums.Machine.Any))
 
-EnumItem.new("")
-EnumCategory.new("")
+print(Enums.is(Enums.Machine))
+print(Enums.is(Enums.Machine.Any))
+
+print(Enums.serialize(Enums.Network.Protocol.LocalRequest))
+
 return nil

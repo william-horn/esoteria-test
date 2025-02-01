@@ -9,18 +9,22 @@
 
 local Shared = game:GetService("ReplicatedStorage").Shared
 
+local TABLE = require(Shared.Types.Table)
 local isTable = require(Shared.Packages.Util.Types.isTable)
 local getId = require(Shared.Enums.getId)
 
-type EnumItemStaticInterface = {
-	[string]: any,
-}
+type EnumItemStaticInterface = EnumItemPublicMethods & TABLE.Map<string, any>
 
-type EnumItemPublicInterface = {
+type EnumItemPublicFields = {
 	value: number,
 	name: string,
-	[string]: any,
 }
+
+type EnumItemPublicMethods = {
+	getId: (self: EnumItem) -> string,
+}
+
+type EnumItemPublicInterface = EnumItemPublicFields & EnumItemPublicMethods & TABLE.Map<string, any>
 
 local EnumItem = {} :: EnumItemStaticInterface
 EnumItem.__index = EnumItem
@@ -30,20 +34,25 @@ EnumItem._itemCount = 0
 EnumItem._idMap = {}
 
 export type EnumItem = typeof(setmetatable({} :: EnumItemPublicInterface, EnumItem))
--- export type Array = { EnumItem }
--- export type Map = { [any]: EnumItem }
+
+function EnumItem:getId()
+	local id = self._id :: string -- private
+	return id
+end
 
 local function new(name: string, _value: number?)
-	local itemCount: number = EnumItem._itemCount
+	local itemCount = EnumItem._itemCount :: number -- private
+	local idMap = EnumItem._idMap :: TABLE.Map<string, EnumItem> -- private
+
 	local value: number = _value or itemCount
 	local itemId = getId("EnumItem", name, itemCount)
 
-	local self = setmetatable({}, EnumItem) :: EnumItem
+	local self = setmetatable({} :: EnumItemPublicInterface, EnumItem)
 	self.value = value
 	self.name = name
 	self._id = itemId
 
-	EnumItem._idMap[itemId] = self
+	idMap[itemId] = self
 	EnumItem._itemCount += 1
 	return self
 end
@@ -53,11 +62,12 @@ local function is(any: any)
 end
 
 local function serialize(enumItem: EnumItem)
-	return enumItem._id
+	return enumItem:getId()
 end
 
-local function deserialize(serialized: string): EnumItem
-	return EnumItem._idMap[serialized]
+local function deserialize(serialized: string)
+	local idMap = EnumItem._idMap :: TABLE.Map<string, EnumItem> -- private
+	return idMap[serialized]
 end
 
 return {

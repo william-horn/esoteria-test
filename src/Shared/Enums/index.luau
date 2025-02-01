@@ -11,92 +11,137 @@
 	transmission using Enum.serialize() and Enum.deserialize()
 ]]
 
+local INVALID_ENUM_ARG_ERROR = "Unable to call %s with incorrect arg type. Expected '%s', got '%s'"
+
 local Shared = game:GetService("ReplicatedStorage").Shared
 
 local EnumItem = require(Shared.Enums.EnumItem)
 local EnumCategory = require(Shared.Enums.EnumCategory)
 
-local Enums = {}
-
 export type Enums = EnumItem.EnumItem | EnumCategory.EnumCategory
 
-function Enums.serialize(enum: Enums): string
-	return enum._id
-end
+-- NETWORK
+local Network: EnumCategory.EnumCategory & {
+	Channel: EnumCategory.EnumCategory & {
+		Channel: EnumItem.EnumItem,
+	},
 
-function Enums.deserialize(serialized: string): Enums
-	local type = serialized:match("[^:]+") :: string
+	Protocol: EnumCategory.EnumCategory & {
+		LocalEvent: EnumItem.EnumItem,
+		LocalRequest: EnumItem.EnumItem,
+		TCPEvent: EnumItem.EnumItem,
+		TCPRequest: EnumItem.EnumItem,
+		UDPEvent: EnumItem.EnumItem,
+	},
 
-	if type == "EnumCategory" then
-		return EnumCategory.deserialize(serialized)
-	elseif type == "EnumItem" then
-		return EnumItem.deserialize(serialized)
+	Request: EnumCategory.EnumCategory & {
+		Generic: EnumItem.EnumItem,
+	},
+} =
+	EnumCategory.new("Network", {
+		Channel = EnumCategory.new("Channel", {
+			Channel = EnumItem.new("Channel"),
+		}),
+
+		Protocol = EnumCategory.new("Protocol", {
+			LocalEvent = EnumItem.new("LocalEvent"),
+			LocalRequest = EnumItem.new("LocalRequest"),
+			TCPEvent = EnumItem.new("TCPEvent"),
+			TCPRequest = EnumItem.new("TCPRequest"),
+			UDPEvent = EnumItem.new("UDPEvent"),
+		}),
+
+		Request = EnumCategory.new("Request", {
+			Generic = EnumItem.new("Generic"),
+		}),
+	})
+--
+
+-- MACHINE
+local Machine: EnumCategory.EnumCategory & {
+	Any: EnumItem.EnumItem,
+	Client: EnumItem.EnumItem,
+	Server: EnumItem.EnumItem,
+	Studio: EnumItem.EnumItem,
+} =
+	EnumCategory.new("Machine", {
+		Any = EnumItem.new("Any"),
+		Client = EnumItem.new("Client"),
+		Server = EnumItem.new("Server"),
+		Studio = EnumItem.new("Studio"),
+	})
+--
+
+-- SIGNAL CONNECTION
+local SignalConnection: EnumCategory.EnumCategory & {
+	Callback: EnumItem.EnumItem,
+	Event: EnumItem.EnumItem,
+	None: EnumItem.EnumItem,
+} =
+	EnumCategory.new("SignalConnection", {
+		Callback = EnumItem.new("Callback"),
+		Event = EnumItem.new("Event"),
+		None = EnumItem.new("None"),
+	})
+--
+
+-- SIGNAL DOMAIN
+local SignalDomain: EnumCategory.EnumCategory & {
+	Global: EnumItem.EnumItem,
+	Local: EnumItem.EnumItem,
+	None: EnumItem.EnumItem,
+} =
+	EnumCategory.new("SignalDomain", {
+		Global = EnumItem.new("Global"),
+		Local = EnumItem.new("Local"),
+		None = EnumItem.new("None"),
+	})
+--
+
+-- VALIDATION
+local Validation: EnumCategory.EnumCategory & {
+	Rejected: EnumItem.EnumItem,
+	Successful: EnumItem.EnumItem,
+} =
+	EnumCategory.new("Validation", {
+		Rejected = EnumItem.new("Rejected"),
+		Successful = EnumItem.new("Successful"),
+	})
+--
+
+local function serialize(enum: Enums): string
+	if EnumItem.is(enum) then
+		return EnumItem.serialize(enum)
+	elseif EnumCategory.is(enum) then
+		return EnumCategory.serialize(enum)
 	else
-		error("Unable to deserialize Enum")
+		error(INVALID_ENUM_ARG_ERROR:format("serialize()", "Enums", typeof(enum)), 2)
 	end
 end
 
-function Enums.is(value: any): boolean
+local function deserialize(serialized: string): Enums
+	local token = serialized:match("[^:]+")
+
+	if token == "EnumCategory" then
+		return EnumCategory.deserialize(serialized)
+	elseif token == "EnumItem" then
+		return EnumItem.deserialize(serialized)
+	else
+		error(INVALID_ENUM_ARG_ERROR:format("deserialize()", "Enums._id<string>", typeof(serialized)))
+	end
+end
+
+local function is(value: any): boolean
 	return EnumItem.is(value) or EnumCategory.is(value)
 end
 
-do
-	local Network = EnumCategory.new("Network")
-
-	local Channel = EnumCategory.new("Channel")
-	Channel.Channel = EnumItem.new("Channel")
-
-	local Protocol = EnumCategory.new("Protocol")
-	Protocol.LocalEvent = EnumItem.new("LocalEvent")
-	Protocol.LocalRequest = EnumItem.new("LocalRequest")
-	Protocol.TCPEvent = EnumItem.new("TCPEvent")
-	Protocol.TCPRequest = EnumItem.new("TCPRequest")
-	Protocol.UDPEvent = EnumItem.new("UDPEvent")
-
-	local Request = EnumCategory.new("Request")
-	Request.Generic = EnumItem.new("Generic")
-
-	Network.Channel = Channel
-	Network.Protocol = Protocol
-	Network.Request = Request
-
-	Enums.Network = Network
-end
-
-do
-	local Machine = EnumCategory.new("Machine")
-	Machine.Any = EnumItem.new("Any")
-	Machine.Client = EnumItem.new("Client")
-	Machine.Server = EnumItem.new("Server")
-	Machine.Studio = EnumItem.new("Studio")
-
-	Enums.Machine = Machine
-end
-
-do
-	local SignalConnection = EnumCategory.new("SignalConnection")
-	SignalConnection.Callback = EnumItem.new("Callback")
-	SignalConnection.Event = EnumItem.new("Event")
-	SignalConnection.None = EnumItem.new("None")
-
-	Enums.SignalConnection = SignalConnection
-end
-
-do
-	local SignalDomain = EnumCategory.new("SignalDomain")
-	SignalDomain.Global = EnumItem.new("Global") -- Remotes
-	SignalDomain.Local = EnumItem.new("Local") -- Bindables
-	SignalDomain.None = EnumItem.new("None")
-
-	Enums.SignalDomain = SignalDomain
-end
-
-do
-	local Validation = EnumCategory.new("Validation")
-	Validation.Any = EnumItem.new("Rejected")
-	Validation.Client = EnumItem.new("Successful")
-
-	Enums.Validation = Validation
-end
-
-return Enums
+return {
+	serialize = serialize,
+	deserialize = deserialize,
+	is = is,
+	Network = Network,
+	Machine = Machine,
+	SignalConnection = SignalConnection,
+	SignalDomain = SignalDomain,
+	Validation = Validation,
+}
