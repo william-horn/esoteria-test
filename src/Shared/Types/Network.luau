@@ -7,14 +7,13 @@ local TABLE = require(Shared.Types.Table)
 local State = require(Shared.Packages.State.index)
 local ValidationStatus = require(Shared.Packages.Util.Classes.ValidationStatus)
 
-export type AnyRemote = RemoteEvent | RemoteFunction | UnreliableRemoteEvent | BindableEvent | BindableFunction
+export type AnyRemote = BaseRemoteEvent | RemoteFunction | BindableEvent | BindableFunction
 
 export type ConnectionInfo = {
 	connector: string,
 	dispatcher: string,
 	signalConnection: Enums.Enums,
 	signalDomain: Enums.Enums,
-	signalType: Enums.Enums,
 	[any]: nil,
 }
 

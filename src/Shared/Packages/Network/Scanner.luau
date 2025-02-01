@@ -1,21 +1,21 @@
 --!strict
 
+local UNRECOGNIZED_OBJECT_WARNING = 'Found unrecognized object "%s" in "%s"'
+local NO_REQUEST_HANDLERS_WARNING = 'No request handlers found for channel "%s"'
+local MISSING_FOLDER_WARNING = 'Could not find local folder "%s"'
+
+local MISSING_REMOTE_ERROR = 'Missing Remote for channel "%s"'
+
+local INVALID_CLASSNAME_ERROR = 'Invalid object class for "%s" (expected "%s", got "%s")'
+local INVALID_ENUM_ERROR = '"%s" is not a valid enum'
+
+local MUTUALLY_EXLUSIVE_HEADERS_ERROR = 'Cannot pass mutually exlusive headers "%s" and "%s"'
+local REQUEST_MISSING_HEADER_ERROR = 'Request "%s" is missing header "%s"'
+
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Packages = Shared.Packages
 local Enums = require(Shared.Enums.index)
 local NetworkEnums = Enums.Network
-
-local UNRECOGNIZED_OBJECT_WARNING: string = 'Found unrecognized object "%s" in "%s"'
-local NO_REQUEST_HANDLERS_WARNING: string = 'No request handlers found for channel "%s"'
-local MISSING_FOLDER_WARNING: string = 'Could not find local folder "%s"'
-
-local MISSING_REMOTE_ERROR: string = 'Missing Remote for channel "%s"'
-
-local INVALID_CLASSNAME_ERROR: string = 'Invalid object class for "%s" (expected "%s", got "%s")'
-local INVALID_ENUM_ERROR: string = '"%s" is not a valid enum'
-
-local MUTUALLY_EXLUSIVE_HEADERS_ERROR: string = 'Cannot pass mutually exlusive headers "%s" and "%s"'
-local REQUEST_MISSING_HEADER_ERROR: string = 'Request "%s" is missing header "%s"'
 
 local NETWORK = require(Shared.Types.Network)
 local TABLE = require(Shared.Types.Table)
@@ -33,7 +33,7 @@ local require = require
 
 local Scanner = {}
 
-local function requireModuleIfExists(module: Instance?, default: any): any
+local function requireModuleIfExists(module: Instance?, default: any)
 	if not (module and isModule(module)) then
 		return default
 	end
@@ -42,9 +42,9 @@ local function requireModuleIfExists(module: Instance?, default: any): any
 end
 
 local function compileRequestsTable(requestsFolder: Folder): NETWORK.Requests
-	local requests = {} :: NETWORK.Requests
+	local requests = {}
 
-	for _, requestFolder: Instance in next, requestsFolder:GetChildren() do
+	for _, requestFolder in next, requestsFolder:GetChildren() do
 		if not isFolder(requestFolder) then
 			warn(UNRECOGNIZED_OBJECT_WARNING:format(requestFolder.Name, requestsFolder:GetFullName()))
 			continue
@@ -53,11 +53,11 @@ local function compileRequestsTable(requestsFolder: Folder): NETWORK.Requests
 		local requestData = TableWithIndexError.new({}, "Field", "RequestData") :: NETWORK.Request
 		-- requestData.lastSentPacket = { headers = {}, payload = nil }
 
-		local handlerModule: Instance? = requestFolder:FindFirstChild("Handler")
-		local settingsModule: Instance? = requestFolder:FindFirstChild("Settings")
-		local stateModule: Instance? = requestFolder:FindFirstChild("State")
-		local validatorModule: Instance? = requestFolder:FindFirstChild("Validator")
-		local onDispatchModule: Instance? = requestFolder:FindFirstChild("OnDispatch")
+		local handlerModule = requestFolder:FindFirstChild("Handler")
+		local settingsModule = requestFolder:FindFirstChild("Settings")
+		local stateModule = requestFolder:FindFirstChild("State")
+		local validatorModule = requestFolder:FindFirstChild("Validator")
+		local onDispatchModule = requestFolder:FindFirstChild("OnDispatch")
 
 		requestData.handler = requireModuleIfExists(handlerModule, nil)
 		requestData.onDispatch = requireModuleIfExists(onDispatchModule, nil)
@@ -75,7 +75,7 @@ local function compileRequestsTable(requestsFolder: Folder): NETWORK.Requests
 end
 
 local function findFolderFrom(origin: Instance, enum: Enums.Enums, name: string): Instance?
-	local folder: Instance? = origin:FindFirstChild(name)
+	local folder = origin:FindFirstChild(name)
 
 	if not folder then
 		warn(MISSING_FOLDER_WARNING:format(name))
@@ -93,8 +93,8 @@ end
 function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
 	local networkTree = TableWithIndexError.new({}, "Protocol", "NetworkTree") :: NETWORK.Tree
 
-	for _, sharedProtocolFolder: Instance in next, networks.SharedNetwork:GetChildren() do
-		local localProtocolFolder: Instance? =
+	for _, sharedProtocolFolder in next, networks.SharedNetwork:GetChildren() do
+		local localProtocolFolder =
 			findFolderFrom(networks.LocalNetwork, NetworkEnums.Protocol, sharedProtocolFolder.Name)
 
 		if not localProtocolFolder then
@@ -103,8 +103,8 @@ function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
 
 		local channels = TableWithIndexError.new({}, "Channel", "Protocol") :: NETWORK.Channels
 
-		for _, sharedChannelFolder: Instance in next, sharedProtocolFolder:GetChildren() do
-			local localChannelFolder: Instance? =
+		for _, sharedChannelFolder in next, sharedProtocolFolder:GetChildren() do
+			local localChannelFolder =
 				findFolderFrom(localProtocolFolder, NetworkEnums.Channel, sharedChannelFolder.Name)
 
 			if not localChannelFolder then
@@ -114,20 +114,20 @@ function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
 			local channel = {} :: NETWORK.Channel
 			-- channel.lastSentPacket = { headers = {}, payload = nil }
 
-			local remote: Instance? = sharedChannelFolder:FindFirstChild("Remote")
+			local remote = sharedChannelFolder:FindFirstChild("Remote")
 
 			-- Find the Remote instance for the channel
 			if not (remote and isRemote(remote)) then
 				error(MISSING_REMOTE_ERROR:format(sharedChannelFolder:GetFullName()), 2)
 			else
-				channel.remote = remote
+				channel.remote = remote :: NETWORK.AnyRemote
 			end
 
-			local settingsModule: Instance? = localChannelFolder:FindFirstChild("Settings")
-			local stateModule: Instance? = localChannelFolder:FindFirstChild("State")
-			local validatorModule: Instance? = localChannelFolder:FindFirstChild("Validator")
-			local requestsFolder: Instance? = localChannelFolder:FindFirstChild("Requests")
-			local onDispatchModule: Instance? = localChannelFolder:FindFirstChild("OnDispatch")
+			local settingsModule = localChannelFolder:FindFirstChild("Settings")
+			local stateModule = localChannelFolder:FindFirstChild("State")
+			local validatorModule = localChannelFolder:FindFirstChild("Validator")
+			local requestsFolder = localChannelFolder:FindFirstChild("Requests")
+			local onDispatchModule = localChannelFolder:FindFirstChild("OnDispatch")
 
 			-- Get the settings for the channel
 			channel.settings = requireModuleIfExists(settingsModule, {})
@@ -152,11 +152,11 @@ function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
 			end
 
 			-- Default channel validator
-			channel.state:addValidator(function(scope: TABLE.StringKeys, state: any)
+			channel.state:addValidator(function(scope: TABLE.Map<string, any>, state: any)
 				-- Dependancy check
-				local dependencies: TABLE.AnyArray? = scope.dependencies
+				local dependencies: TABLE.ArrayOf<any>? = scope.dependencies
 				local request: Enums.Enums = scope.request
-				local lastDependancies: TABLE.AnyArray? = state.dependencies
+				local lastDependancies: TABLE.ArrayOf<any>? = state.dependencies
 				local headers: NETWORK.Headers = scope.headers
 
 				-- Validate headers
@@ -170,11 +170,11 @@ function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
 				if not dependencies then
 					return true
 				elseif lastDependancies and #lastDependancies == #dependencies then
-					local sameValues: boolean = true
+					local sameValues = true
 					-- print("both dependency tables exist and are same size")
 
 					-- Shallow-check if both dependency arrays are equal in content
-					for index: number = 1, #lastDependancies do
+					for index = 1, #lastDependancies do
 						if lastDependancies[index] ~= dependencies[index] then
 							sameValues = false
 							break

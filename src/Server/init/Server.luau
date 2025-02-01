@@ -1,41 +1,53 @@
 --!strict
 
 local Shared = game:GetService("ReplicatedStorage").Shared
--- local Server = game:GetService("ServerScriptService").Server
--- local Packages = Shared.Packages
--- local Network = require(Server.Packages.Network.index):init()
+local Server = game:GetService("ServerScriptService").Server
+local Packages = Shared.Packages
+local Network = require(Server.Packages.Network.index)
+Network:init()
 
--- local TABLE = require(Shared.Types.Table)
--- local NETWORK = require(Shared.Types.Network)
+local TABLE = require(Shared.Types.Table)
+local NETWORK = require(Shared.Types.Network)
 
--- -- Enums
--- local Enums = require(Shared.Enums.index)
--- local NetworkEnums = Enums.Network
--- local EnumCategory = require(Shared.Enums.EnumCategory)
--- local EnumItem = require(Shared.Enums.EnumItem)
+-- Enums
+local Enums = require(Shared.Enums.index)
+local NetworkEnums = Enums.Network
+local EnumCategory = require(Shared.Enums.EnumCategory)
+local EnumItem = require(Shared.Enums.EnumItem)
 
--- while true do
--- 	local t = os.clock()
+while true do
+	local t = os.clock()
 
--- 	local response: NETWORK.Response = Network:sendTCP({
--- 		headers = {
--- 			channel = Enums.Network.Channel.Channel,
--- 			request = Enums.Network.Request.Generic,
--- 			sendAll = true,
--- 			-- dependencies = { os.clock() },
--- 		},
--- 		payload = {
--- 			data = "test data",
--- 		},
--- 	})
+	-- local response = Network:sendTCP({
+	-- 	headers = {
+	-- 		channel = Enums.Network.Channel.Channel,
+	-- 		request = Enums.Network.Request.Generic,
+	-- 		sendAll = true
+	-- 	},
+	-- 	payload = {
+	-- 		data = "testing"
+	-- 	}
+	-- })
 
--- 	local f = os.clock() - t
+	local response = Network:sendTCP({
+		headers = {
+			channel = Enums.Network.Channel.Channel,
+			request = Enums.Network.Request.Generic,
+			sendAll = true,
+			-- dependencies = { os.clock() },
+		},
+		payload = {
+			data = "test data",
+		},
+	})
 
--- 	print("time: ", f)
--- 	print("response: ", response)
+	local f = os.clock() - t
 
--- 	task.wait(0.5)
--- end
+	print("time: ", f)
+	print("response: ", response)
+
+	task.wait(2)
+end
 
 -- class builder
 -- local ClassBuilder = require(Shared.Packages.Util.Classes.ClassBuilder)
@@ -89,19 +101,21 @@ local Shared = game:GetService("ReplicatedStorage").Shared
 -- local r1 = Enum2.new()
 -- print(Enum.is(Enum2))
 
-local EnumCategory = require(Shared.Enums.EnumCategory)
-local EnumItem = require(Shared.Enums.EnumItem)
-local Enums = require(Shared.Enums.index)
+-- local EnumCategory = require(Shared.Enums.EnumCategory)
+-- local EnumItem = require(Shared.Enums.EnumItem)
+-- local Enums = require(Shared.Enums.index)
 
-print(Enums.Machine:getItems())
-print(Enums.Machine.Any:getId())
+-- print(Enums.Machine:getItems())
+-- print(Enums.Machine.Any:getId())
 
-print(EnumCategory.is(Enums.Machine.Any))
-print(EnumItem.is(Enums.Machine.Any))
+-- print(EnumCategory.is(Enums.Machine.Any))
+-- print(EnumItem.is(Enums.Machine.Any))
 
-print(Enums.is(Enums.Machine))
-print(Enums.is(Enums.Machine.Any))
+-- print(Enums.is(Enums.Machine))
+-- print(Enums.is(Enums.Machine.Any))
 
-print(Enums.serialize(Enums.Network.Protocol.LocalRequest))
+-- print(Enums.serialize(Enums.Network.Protocol.LocalRequest))
+
+-- print(Enums.Machine.Any == Enums.Machine.Any)
 
 return nil

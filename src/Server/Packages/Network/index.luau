@@ -4,17 +4,18 @@
 	Server-side Network API
 ]]
 
-local INVALID_DISPATCH_ARGS = 'Failed to dispatch remote due to missing "headers" or "payload" fields'
+local INVALID_DISPATCH_ARGS_ERROR = 'Failed to dispatch remote due to missing "headers" or "payload" fields'
 local INVALID_HEADERS_ERROR = "Failed to dispatch remote due to missing or invalid '%s' header"
 local BAD_REQUEST_ERROR = 'Received bad request "%s" from player: %s'
 local REQUEST_MISSING_HEADER_ERROR = 'Request "%s" is missing header "%s"'
+local DISPATCH_ERROR = "Dispatch failed due to: %s"
 
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Server = game:GetService("ServerScriptService").Server
 local Packages = Shared.Packages
 local Enums = require(Shared.Enums.index)
-local NetworkEnums: Enums.Enums = Enums.Network
-local SignalConnection: Enums.Enums = Enums.SignalConnection
+local NetworkEnums = Enums.Network
+local SignalConnection = Enums.SignalConnection
 -- local SignalDomain: Enums.Enums = Enums.SignalDomain
 -- local SignalType: Enums.Enums = Enums.SignalType
 
@@ -27,7 +28,7 @@ local ValidationStatus = require(Packages.Util.Classes.ValidationStatus)
 
 local Network = {}
 
-local function handleRequest(requests: NETWORK.Requests): (fromPlayer: Player, packet: NETWORK.Packet) -> ()
+local function handleRequest(requests: NETWORK.Requests)
 	return function(fromPlayer: Player, packet: NETWORK.Packet): ()
 		local request: Enums.Enums = packet.headers.request
 		local requestData: NETWORK.Request = requests[request.name]
@@ -44,24 +45,24 @@ local function handleRequest(requests: NETWORK.Requests): (fromPlayer: Player, p
 	end
 end
 
-function Network:getTCPEventChannel(channel: Enums.Enums): NETWORK.Channel
+function Network:getTCPEventChannel(channel: Enums.Enums)
 	return self._tree.TCPEvent.channels[channel.name]
 end
 
-function Network:getTCPRequestChannel(channel: Enums.Enums): NETWORK.Channel
+function Network:getTCPRequestChannel(channel: Enums.Enums)
 	return self._tree.TCPRequest.channels[channel.name]
 end
 
-function Network:getUDPEventChannel(channel: Enums.Enums): NETWORK.Channel
+function Network:getUDPEventChannel(channel: Enums.Enums)
 	return self._tree.UDPEvent.channels[channel.name]
 end
 
 function Network:dispatch(packet: NETWORK.Packet): NETWORK.Response
-	local headers: NETWORK.Headers = packet.headers
-	local payload: NETWORK.Payload = packet.payload
+	local headers = packet.headers
+	local payload = packet.payload
 
-	if not headers or payload then
-		error(INVALID_DISPATCH_ARGS, 2)
+	if not headers or not payload then
+		error(INVALID_DISPATCH_ARGS_ERROR, 2)
 	end
 
 	--! do timestamps here --
@@ -70,10 +71,10 @@ function Network:dispatch(packet: NETWORK.Packet): NETWORK.Response
 	headers.dependencies = nil
 
 	local protocol: Enums.Enums = headers.protocol
-	local channel: Enums.Enums = headers.channel
-	local request: Enums.Enums = headers.request
+	local channel = headers.channel
+	local request = headers.request
 
-	local response = {} :: NETWORK.Response
+	local response = {}
 
 	-- Validate required headers
 	if not request then
@@ -89,27 +90,27 @@ function Network:dispatch(packet: NETWORK.Packet): NETWORK.Response
 	end
 
 	-- Retrieve the network location to fire from
-	local protocolData: NETWORK.Protocol = self._tree[protocol.name]
-	local channelData: NETWORK.Channel = protocolData.channels[channel.name]
-	local requestData: NETWORK.Request = channelData.requests[request.name]
+	local protocolData = self._tree[protocol.name]
+	local channelData = protocolData.channels[channel.name]
+	local requestData = channelData.requests[request.name]
 	local connectionInfo = protocolData.connectionInfo
 
 	headers.originTime = DateTime.now()
 
 	-- Validate the remote dispatch
-	local success: boolean, validationReport: ValidationStatus.Array? = channelData.state:validate({
+	local success, validationReport = channelData.state:validate({
 		dependencies = dependencies,
 		headers = headers,
 		request = request,
 	})
 
-	local function invokeOnDispatch(success: boolean, validationReport: ValidationStatus.Array?): ()
+	local function invokeOnDispatch(_success: boolean, _validationReport: ValidationStatus.Array?)
 		if channelData.onDispatch then
-			channelData.onDispatch(channelData, success, validationReport, packet)
+			channelData.onDispatch(channelData, _success, _validationReport, packet)
 		end
 
 		if requestData.onDispatch then
-			requestData.onDispatch(requestData, success, validationReport, packet)
+			requestData.onDispatch(requestData, _success, _validationReport, packet)
 		end
 	end
 
@@ -157,10 +158,12 @@ function Network:dispatch(packet: NETWORK.Packet): NETWORK.Response
 		if headers.sendAll then
 			channelData.remote:FireAllClients(packet)
 			return response
-		end
-
-		for _, player: Player in next, headers.toPlayers do
-			channelData.remote[protocolData.connectionInfo.dispatcher](player, packet)
+		elseif headers.toPlayers then
+			for _, player: Player in next, headers.toPlayers do
+				channelData.remote[protocolData.connectionInfo.dispatcher](player, packet)
+			end
+		else
+			error(DISPATCH_ERROR:format("Invalid headers"), 2)
 		end
 	end
 
@@ -183,9 +186,9 @@ function Network:sendUDP(packet: NETWORK.Packet): NETWORK.Response
 	return self:dispatch(packet)
 end
 
-function Network:init(): any
+function Network:init()
 	-- Build the network tree responsible for storing channels, remote, requests, etc
-	local NetworkTree: NETWORK.Tree = NetworkScanner:createNetworkTree({
+	local NetworkTree = NetworkScanner:createNetworkTree({
 		SharedNetwork = Shared.Network,
 		LocalNetwork = Server.Network,
 	})
@@ -200,9 +203,9 @@ function Network:init(): any
 		end
 
 		print("Preparing [" .. protocolName .. "] listeners...")
-		local connectionInfo: NETWORK.ConnectionInfo = protocolData.connectionInfo
+		local connectionInfo = protocolData.connectionInfo
 
-		for channelName: string, channelData: NETWORK.Channel in next, protocolData.channels do
+		for channelName, channelData in next, protocolData.channels do
 			-- If there are no request handlers for this channel, then don't create any listeners
 			if not next(channelData.requests) then
 				continue
