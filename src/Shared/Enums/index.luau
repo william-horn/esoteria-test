@@ -18,24 +18,25 @@ local Shared = game:GetService("ReplicatedStorage").Shared
 local EnumItem = require(Shared.Enums.EnumItem)
 local EnumCategory = require(Shared.Enums.EnumCategory)
 
-export type Enums = EnumItem.EnumItem | EnumCategory.EnumCategory
+export type EnumItem = EnumItem.EnumItem
+export type EnumCategory = EnumCategory.EnumCategory
 
 -- NETWORK
-local Network: EnumCategory.EnumCategory & {
-	Channel: EnumCategory.EnumCategory & {
-		Channel: EnumItem.EnumItem,
+local Network: EnumCategory & {
+	Channel: EnumCategory & {
+		Channel: EnumItem,
 	},
 
-	Protocol: EnumCategory.EnumCategory & {
-		LocalEvent: EnumItem.EnumItem,
-		LocalRequest: EnumItem.EnumItem,
-		TCPEvent: EnumItem.EnumItem,
-		TCPRequest: EnumItem.EnumItem,
-		UDPEvent: EnumItem.EnumItem,
+	Protocol: EnumCategory & {
+		LocalEvent: EnumItem,
+		LocalRequest: EnumItem,
+		TCPEvent: EnumItem,
+		TCPRequest: EnumItem,
+		UDPEvent: EnumItem,
 	},
 
-	Request: EnumCategory.EnumCategory & {
-		Generic: EnumItem.EnumItem,
+	Request: EnumCategory & {
+		Generic: EnumItem,
 	},
 } =
 	EnumCategory.new("Network", {
@@ -58,11 +59,11 @@ local Network: EnumCategory.EnumCategory & {
 --
 
 -- MACHINE
-local Machine: EnumCategory.EnumCategory & {
-	Any: EnumItem.EnumItem,
-	Client: EnumItem.EnumItem,
-	Server: EnumItem.EnumItem,
-	Studio: EnumItem.EnumItem,
+local Machine: EnumCategory & {
+	Any: EnumItem,
+	Client: EnumItem,
+	Server: EnumItem,
+	Studio: EnumItem,
 } =
 	EnumCategory.new("Machine", {
 		Any = EnumItem.new("Any"),
@@ -73,10 +74,10 @@ local Machine: EnumCategory.EnumCategory & {
 --
 
 -- SIGNAL CONNECTION
-local SignalConnection: EnumCategory.EnumCategory & {
-	Callback: EnumItem.EnumItem,
-	Event: EnumItem.EnumItem,
-	None: EnumItem.EnumItem,
+local SignalConnection: EnumCategory & {
+	Callback: EnumItem,
+	Event: EnumItem,
+	None: EnumItem,
 } =
 	EnumCategory.new("SignalConnection", {
 		Callback = EnumItem.new("Callback"),
@@ -86,10 +87,10 @@ local SignalConnection: EnumCategory.EnumCategory & {
 --
 
 -- SIGNAL DOMAIN
-local SignalDomain: EnumCategory.EnumCategory & {
-	Global: EnumItem.EnumItem,
-	Local: EnumItem.EnumItem,
-	None: EnumItem.EnumItem,
+local SignalDomain: EnumCategory & {
+	Global: EnumItem,
+	Local: EnumItem,
+	None: EnumItem,
 } =
 	EnumCategory.new("SignalDomain", {
 		Global = EnumItem.new("Global"),
@@ -99,17 +100,16 @@ local SignalDomain: EnumCategory.EnumCategory & {
 --
 
 -- VALIDATION
-local Validation: EnumCategory.EnumCategory & {
-	Rejected: EnumItem.EnumItem,
-	Successful: EnumItem.EnumItem,
-} =
-	EnumCategory.new("Validation", {
-		Rejected = EnumItem.new("Rejected"),
-		Successful = EnumItem.new("Successful"),
-	})
+local Validation: EnumCategory & {
+	Rejected: EnumItem,
+	Successful: EnumItem,
+} = EnumCategory.new("Validation", {
+	Rejected = EnumItem.new("Rejected"),
+	Successful = EnumItem.new("Successful"),
+})
 --
 
-local function serialize(enum: Enums): string
+local function serialize(enum: EnumCategory | EnumItem.EnumItem): string
 	if EnumItem.is(enum) then
 		return EnumItem.serialize(enum)
 	elseif EnumCategory.is(enum) then
@@ -119,7 +119,7 @@ local function serialize(enum: Enums): string
 	end
 end
 
-local function deserialize(serialized: string): Enums
+local function deserialize(serialized: string): EnumCategory | EnumItem.EnumItem
 	local token = serialized:match("[^:]+")
 
 	if token == "EnumCategory" then

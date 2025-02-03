@@ -22,24 +22,12 @@ local TABLE = require(Shared.Types.Table)
 
 local isFolder = require(Packages.Util.Types.isFolder)
 local isRemote = require(Packages.Util.Types.isRemote)
--- local isRemoteEvent = require(Packages.Util.Types.isRemoteEvent)
 local isModule = require(Packages.Util.Types.isModule)
-local getRemoteConnectionInfo = require(Packages.Network.getRemoteConnectionInfo)
+local requireModuleIfExists = require(Packages.Util.requireModuleIfExists)
 local State = require(Packages.State.index)
-local TableWithIndexError = require(Packages.Util.Classes.TableWithIndexError)
--- local ValidationStatus = require(Packages.Util.Classes.ValidationStatus)
 
 local require = require
-
 local Scanner = {}
-
-local function requireModuleIfExists(module: Instance?, default: any)
-	if not (module and isModule(module)) then
-		return default
-	end
-
-	return require(module)
-end
 
 local function compileRequestsTable(requestsFolder: Folder): NETWORK.Requests
 	local requests = {}
@@ -50,7 +38,7 @@ local function compileRequestsTable(requestsFolder: Folder): NETWORK.Requests
 			continue
 		end
 
-		local requestData = TableWithIndexError.new({}, "Field", "RequestData") :: NETWORK.Request
+		local requestData = {} :: NETWORK.Request
 		-- requestData.lastSentPacket = { headers = {}, payload = nil }
 
 		local handlerModule = requestFolder:FindFirstChild("Handler")
@@ -74,7 +62,7 @@ local function compileRequestsTable(requestsFolder: Folder): NETWORK.Requests
 	return requests
 end
 
-local function findFolderFrom(origin: Instance, enum: Enums.Enums, name: string): Instance?
+local function findFolderFrom(origin: Instance, enum: Enums.EnumItem, name: string): Instance?
 	local folder = origin:FindFirstChild(name)
 
 	if not folder then
@@ -90,8 +78,8 @@ local function findFolderFrom(origin: Instance, enum: Enums.Enums, name: string)
 	return folder
 end
 
-function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
-	local networkTree = TableWithIndexError.new({}, "Protocol", "NetworkTree") :: NETWORK.Tree
+function Scanner:createNetworkTree(networks: NETWORK.Both)
+	local networkTree = {} :: NETWORK.Tree
 
 	for _, sharedProtocolFolder in next, networks.SharedNetwork:GetChildren() do
 		local localProtocolFolder =
@@ -101,7 +89,7 @@ function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
 			continue
 		end
 
-		local channels = TableWithIndexError.new({}, "Channel", "Protocol") :: NETWORK.Channels
+		local channels = {} :: NETWORK.Channels
 
 		for _, sharedChannelFolder in next, sharedProtocolFolder:GetChildren() do
 			local localChannelFolder =
@@ -155,7 +143,7 @@ function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
 			channel.state:addValidator(function(scope: TABLE.Map<string, any>, state: any)
 				-- Dependancy check
 				local dependencies: TABLE.ArrayOf<any>? = scope.dependencies
-				local request: Enums.Enums = scope.request
+				local request: Enums.EnumItem = scope.request
 				local lastDependancies: TABLE.ArrayOf<any>? = state.dependencies
 				local headers: NETWORK.Headers = scope.headers
 
@@ -199,7 +187,6 @@ function Scanner:createNetworkTree(networks: NETWORK.Both): NETWORK.Tree
 		end
 
 		networkTree[sharedProtocolFolder.Name] = {
-			connectionInfo = getRemoteConnectionInfo(NetworkEnums.Protocol[sharedProtocolFolder.Name]),
 			channels = channels,
 		} :: NETWORK.Protocol
 	end

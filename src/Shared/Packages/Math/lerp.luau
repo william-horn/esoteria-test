@@ -11,7 +11,7 @@
 
 	@returns: The interpolated value between `a` and `b`
 ]]
-local function lerp(a: number, b: number, p: number): number
+local function lerp(a: number, b: number, p: number)
 	return a + (b - a) * p
 end
 

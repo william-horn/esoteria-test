@@ -4,7 +4,7 @@
 	@desc:
 		Create a new random seed using `os.clock()`
 ]]
-local function newSeed(): ()
+local function newSeed()
 	math.randomseed(os.clock())
 end
 

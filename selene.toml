@@ -1,1 +1,3 @@
 std = "roblox"
+[disable]
+unused-variable = true

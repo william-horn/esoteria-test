@@ -7,7 +7,7 @@ local noSpace = require(script.Parent.noSpace)
 	@params: <string> str, <boolean> countSpaceCharAsEmpty (whether to count space chars as empty)
 	@returns: <boolean> isEmpty
 ]]
-local function isEmpty(str: string, countSpaceCharAsEmpty: boolean): boolean
+local function isEmpty(str: string, countSpaceCharAsEmpty: boolean)
 	return countSpaceCharAsEmpty and (noSpace(str) == "") or (str == "")
 end
 

@@ -11,7 +11,7 @@ local Shared = game:GetService("ReplicatedStorage").Shared
 
 local TABLE = require(Shared.Types.Table)
 local isTable = require(Shared.Packages.Util.Types.isTable)
-local getId = require(Shared.Enums.getId)
+local getId = require(Shared.Enums.Util.getId)
 
 type EnumItemStaticInterface = EnumItemPublicMethods & TABLE.Map<string, any>
 

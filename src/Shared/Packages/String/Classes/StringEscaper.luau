@@ -82,13 +82,13 @@ type StringIdMap = {
 	[string]: number,
 }
 
-type self__StringEscaper = {
+type StringEscaperFields = {
 	_stringToId: { [string]: number },
 	_escaped: EscapeDataMap,
 	prefix: string,
 }
 
-export type StringEscaper = typeof(setmetatable({} :: self__StringEscaper, StringEscaper))
+export type StringEscaper = typeof(setmetatable({} :: StringEscaperFields, StringEscaper))
 
 --[[
 	StringEscaper:escape(text<string>):
@@ -101,7 +101,7 @@ export type StringEscaper = typeof(setmetatable({} :: self__StringEscaper, Strin
 	@returns:
 		<string>: the escaped text
 ]]
-function StringEscaper:escape(text: string): string
+function StringEscaper:escape(text: string)
 	for _, stringData: EscapeData in next, self._escaped do
 		text = text:gsub(stringData.escapePattern, stringData.encoded)
 	end
@@ -120,7 +120,7 @@ end
 	@returns:
 		<string>: the unescaped text
 ]]
-function StringEscaper:unescape(text: string): string
+function StringEscaper:unescape(text: string)
 	for _, stringData: EscapeData in next, self._escaped do
 		text = text:gsub(stringData.encoded, stringData.text)
 	end
@@ -147,8 +147,8 @@ function StringEscaper:add(text: string): number?
 		return nil
 	end
 
-	local id: number = getVacantIndex(stringData)
-	local noMagicText: string = StringEscaper.escapeMagicChars(text)
+	local id = getVacantIndex(stringData)
+	local noMagicText = StringEscaper.escapeMagicChars(text)
 
 	stringData[id] = {
 		encoded = "\1" .. id .. "\1",
@@ -171,7 +171,7 @@ end
 	@returns:
 		<nil>
 ]]
-function StringEscaper:remove(text: string | number): ()
+function StringEscaper:remove(text: string | number)
 	local stringData: EscapeDataMap = self._escaped
 	local stringToId: StringIdMap = self._stringToId
 
@@ -193,7 +193,7 @@ end
 
 	Returns true if a value is a StringEscaper instance
 ]]
-function StringEscaper.is(v: any): boolean
+function StringEscaper.is(v: any)
 	return isTable(v) and getmetatable(v) == StringEscaper
 end
 
@@ -207,7 +207,7 @@ end
 	@returns:
 		<string>: the escaped text
 ]]
-function StringEscaper.escapeMagicChars(text: string): string
+function StringEscaper.escapeMagicChars(text: string)
 	text = text:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0")
 	return text
 end
@@ -223,10 +223,10 @@ end
 	@returns:
 		<StringEscaper>: the StringEscaper object
 ]]
-function StringEscaper.new(prefix: string, _escaped: TABLE.StringArray?): StringEscaper
-	local escaped: TABLE.StringArray = table.clone(_escaped or {}) :: TABLE.StringArray
+function StringEscaper.new(prefix: string, _escaped: TABLE.ArrayOf<string>?)
+	local escaped: TABLE.ArrayOf<string> = table.clone(_escaped or {}) :: TABLE.ArrayOf<string>
 
-	local self = setmetatable({} :: self__StringEscaper, StringEscaper)
+	local self = setmetatable({}, StringEscaper) :: StringEscaper
 
 	--[[
 		dict that maps encoded/decoded string segments

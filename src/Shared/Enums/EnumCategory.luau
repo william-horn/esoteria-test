@@ -15,7 +15,7 @@ local TABLE = require(Shared.Types.Table)
 
 local isTable = require(Shared.Packages.Util.Types.isTable)
 local getValues = require(Shared.Packages.Table.Dictionary.values)
-local getId = require(Shared.Enums.getId)
+local getId = require(Shared.Enums.Util.getId)
 
 --[[
 Static interface (internal only)
@@ -126,7 +126,7 @@ Public Static methods
 These methods are constructor or utility functions available only
 at the class level.
 ]]
-local function new(name: string, _enumItems: TABLE.Map<string, EnumItem.EnumItem>?)
+local function new(name: string, _enumItems: TABLE.Map<string, EnumItem.EnumItem>?): EnumCategory
 	local categoryCount = EnumCategory._categoryCount :: number -- private
 	local enumItems = _enumItems or {}
 

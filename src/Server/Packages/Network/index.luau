@@ -30,8 +30,8 @@ local Network = {}
 
 local function handleRequest(requests: NETWORK.Requests)
 	return function(fromPlayer: Player, packet: NETWORK.Packet): ()
-		local request: Enums.Enums = packet.headers.request
-		local requestData: NETWORK.Request = requests[request.name]
+		local request = packet.headers.request
+		local requestData = requests[request.name]
 
 		if not requestData then
 			error(BAD_REQUEST_ERROR:format(request.name, fromPlayer.Name), 2)
@@ -45,15 +45,15 @@ local function handleRequest(requests: NETWORK.Requests)
 	end
 end
 
-function Network:getTCPEventChannel(channel: Enums.Enums)
+function Network:getTCPEventChannel(channel: Enums.EnumItem)
 	return self._tree.TCPEvent.channels[channel.name]
 end
 
-function Network:getTCPRequestChannel(channel: Enums.Enums)
+function Network:getTCPRequestChannel(channel: Enums.EnumItem)
 	return self._tree.TCPRequest.channels[channel.name]
 end
 
-function Network:getUDPEventChannel(channel: Enums.Enums)
+function Network:getUDPEventChannel(channel: Enums.EnumItem)
 	return self._tree.UDPEvent.channels[channel.name]
 end
 
@@ -67,10 +67,10 @@ function Network:dispatch(packet: NETWORK.Packet): NETWORK.Response
 
 	--! do timestamps here --
 
-	local dependencies: TABLE.AnyArray? = headers.dependencies
+	local dependencies: TABLE.ArrayOf<any>? = headers.dependencies
 	headers.dependencies = nil
 
-	local protocol: Enums.Enums = headers.protocol
+	local protocol: Enums.EnumItem = headers.protocol
 	local channel = headers.channel
 	local request = headers.request
 
@@ -104,7 +104,10 @@ function Network:dispatch(packet: NETWORK.Packet): NETWORK.Response
 		request = request,
 	})
 
-	local function invokeOnDispatch(_success: boolean, _validationReport: ValidationStatus.Array?)
+	local function invokeOnDispatch(
+		_success: boolean,
+		_validationReport: TABLE.ArrayOf<ValidationStatus.ValidationStatus>?
+	)
 		if channelData.onDispatch then
 			channelData.onDispatch(channelData, _success, _validationReport, packet)
 		end
@@ -186,9 +189,9 @@ function Network:sendUDP(packet: NETWORK.Packet): NETWORK.Response
 	return self:dispatch(packet)
 end
 
-function Network:init()
+function Network:init(): any
 	-- Build the network tree responsible for storing channels, remote, requests, etc
-	local NetworkTree = NetworkScanner:createNetworkTree({
+	local NetworkTree: NETWORK.Tree = NetworkScanner:createNetworkTree({
 		SharedNetwork = Shared.Network,
 		LocalNetwork = Server.Network,
 	})

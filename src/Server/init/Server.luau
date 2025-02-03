@@ -2,42 +2,29 @@
 
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Server = game:GetService("ServerScriptService").Server
-local Packages = Shared.Packages
-local Network = require(Server.Packages.Network.index)
-Network:init()
+-- local Packages = Shared.Packages
+local Network = require(Server.Packages.Network.index):init()
 
-local TABLE = require(Shared.Types.Table)
-local NETWORK = require(Shared.Types.Network)
+-- local TABLE = require(Shared.Types.Table)
+-- local NETWORK = require(Shared.Types.Network)
 
 -- Enums
 local Enums = require(Shared.Enums.index)
-local NetworkEnums = Enums.Network
-local EnumCategory = require(Shared.Enums.EnumCategory)
-local EnumItem = require(Shared.Enums.EnumItem)
+-- local NetworkEnums = Enums.Network
+-- local EnumCategory = require(Shared.Enums.EnumCategory)
+-- local EnumItem = require(Shared.Enums.EnumItem)
 
 while true do
 	local t = os.clock()
-
-	-- local response = Network:sendTCP({
-	-- 	headers = {
-	-- 		channel = Enums.Network.Channel.Channel,
-	-- 		request = Enums.Network.Request.Generic,
-	-- 		sendAll = true
-	-- 	},
-	-- 	payload = {
-	-- 		data = "testing"
-	-- 	}
-	-- })
 
 	local response = Network:sendTCP({
 		headers = {
 			channel = Enums.Network.Channel.Channel,
 			request = Enums.Network.Request.Generic,
 			sendAll = true,
-			-- dependencies = { os.clock() },
 		},
 		payload = {
-			data = "test data",
+			data = "testing",
 		},
 	})
 

@@ -5,10 +5,8 @@ local isModule = require(Shared.Packages.Util.Types.isModule)
 
 local require = require
 
-export type RequiredModules = { [string]: any }
-
-local function requireModules(modules: { Instance }, callback: (got: { key: any, value: any }) -> ()?): RequiredModules
-	local package: RequiredModules = {}
+local function requireModules(modules: { Instance }, callback: (got: { key: any, value: any }) -> ()?)
+	local package = {}
 
 	for _, module: Instance in next, modules do
 		local _isModule: boolean = isModule(module)

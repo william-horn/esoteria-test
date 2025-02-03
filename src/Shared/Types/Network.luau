@@ -3,46 +3,35 @@
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Enums = require(Shared.Enums.index)
 local TABLE = require(Shared.Types.Table)
--- local FUNCTION = require(Shared.Types.Function)
 local State = require(Shared.Packages.State.index)
 local ValidationStatus = require(Shared.Packages.Util.Classes.ValidationStatus)
 
 export type AnyRemote = BaseRemoteEvent | RemoteFunction | BindableEvent | BindableFunction
 
-export type ConnectionInfo = {
-	connector: string,
-	dispatcher: string,
-	signalConnection: Enums.Enums,
-	signalDomain: Enums.Enums,
-	[any]: nil,
-}
-
 export type OnDispatch = (
 	type: Channel | Request,
 	success: boolean,
-	validationStatus: ValidationStatus.Array?,
+	validationStatus: TABLE.ArrayOf<ValidationStatus.ValidationStatus>?,
 	packet: Packet
 ) -> ()
 
 export type Response = {
 	headers: Headers?,
-	payload: Payload?,
+	payload: any?,
 	success: boolean,
-	validationReport: ValidationStatus.Array?,
+	validationReport: TABLE.ArrayOf<ValidationStatus.ValidationStatus>?,
 }
 
 export type Packet = {
 	headers: Headers,
-	payload: Payload,
+	payload: any,
 	[any]: nil,
 }
 
-export type Payload = any
-
 export type Headers = {
-	channel: Enums.Enums,
-	request: Enums.Enums,
-	dependencies: TABLE.AnyArray?,
+	channel: Enums.EnumItem,
+	request: Enums.EnumItem,
+	dependencies: TABLE.ArrayOf<any>?,
 	toPlayers: { Player }?,
 	sendAll: boolean?,
 	[string]: any,
@@ -54,17 +43,17 @@ export type Request = {
 	onDispatch: OnDispatch?,
 	state: State.State,
 	validator: State.StateValidator?,
-	settings: TABLE.Any,
+	settings: TABLE.Map<string, any>,
 	[any]: nil,
 }
 
-export type Requests = { [string]: Request }
+export type Requests = TABLE.Map<string, Request>
 
 export type Channel = {
 	remote: AnyRemote,
 	onDispatch: OnDispatch?,
 	lastSentPacket: Packet?,
-	settings: TABLE.Any,
+	settings: TABLE.Map<string, any>,
 	state: State.State,
 	requests: Requests,
 	[any]: nil,
@@ -76,7 +65,6 @@ export type Channels = {
 
 export type Protocol = {
 	channels: Channels,
-	connectionInfo: ConnectionInfo,
 	[any]: nil,
 }
 

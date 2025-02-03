@@ -6,7 +6,7 @@
 
 	"[luau]": {
     "editor.defaultFormatter": "JohnnyMorganz.stylua",
-		"editor.formatOnSave": true
+		"editor.formatOnSave": true,
 	},
 
   // "robloxLsp.typeChecking.mode": "Strict"

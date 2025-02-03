@@ -9,7 +9,7 @@ local function findInstanceWithNameAndClass(
 	className: string,
 	recursive: boolean?
 ): Instance?
-	local children: TABLE.InstanceArray = if recursive then parent:GetDescendants() else parent:GetChildren()
+	local children: TABLE.ArrayOf<Instance> = if recursive then parent:GetDescendants() else parent:GetChildren()
 
 	for _, child: Instance in children do
 		if child.Name == name and child.ClassName == className then

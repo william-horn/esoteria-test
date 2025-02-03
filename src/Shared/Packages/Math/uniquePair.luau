@@ -10,7 +10,7 @@
 
 	@returns: A unique number from the two parameters
 ]]
-local function uniquePair(a: number, b: number): number
+local function uniquePair(a: number, b: number)
 	return a > b and a * a + a + b or b * b + a
 end
 
